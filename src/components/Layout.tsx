@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { BookOpen, Bug, ClipboardList, FileText, House, Map, Menu, ShieldCheck, X } from 'lucide-react'
+import { BookOpen, Bug, ClipboardList, FileText, Gauge, Home, Map, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
+import { useAuth } from '../lib/AuthContext'
 
 const nav = [
-  { to: '/', label: 'Home', icon: House },
+  { to: '/', label: 'Start here', icon: Home },
+  { to: '/dashboard', label: 'Ward dashboard', icon: Gauge },
   { to: '/library', label: 'News & plan', icon: FileText },
   { to: '/planner', label: 'My preparedness', icon: ClipboardList },
   { to: '/recipes', label: 'Pantry meals', icon: BookOpen },
@@ -12,6 +14,7 @@ const nav = [
 
 export default function Layout() {
   const [open, setOpen] = useState(false)
+  const { session } = useAuth()
 
   return (
     <div className="site-shell">
@@ -19,7 +22,7 @@ export default function Layout() {
       <header className="site-header">
         <Link to="/" className="brand" onClick={() => setOpen(false)}>
           <span className="brand-mark"><ShieldCheck size={24} /></span>
-          <span><strong>Ready, EP7</strong><small>Spanish Fork 7th Ward</small></span>
+          <span><strong>Ready Together</strong><small>Spanish Fork 7th Ward</small></span>
         </Link>
         <button className="menu-button" aria-label="Toggle navigation" onClick={() => setOpen(!open)}>
           {open ? <X /> : <Menu />}
@@ -30,13 +33,14 @@ export default function Layout() {
               <Icon size={17} /> {label}
             </NavLink>
           ))}
+          <NavLink to="/account" onClick={() => setOpen(false)}><UserRound size={17} /> {session ? 'My account' : 'Sign in'}</NavLink>
         </nav>
       </header>
       <main id="main"><Outlet /></main>
       <Link className="feedback-fab" to="/feedback"><Bug size={17} /> <span>Report a bug or idea</span></Link>
       <footer>
         <div>
-          <strong>Ready, EP7</strong>
+          <strong>Ready Together</strong>
           <p>A practical preparedness resource for neighbors in the Spanish Fork 7th Ward.</p>
         </div>
         <div className="footer-links">

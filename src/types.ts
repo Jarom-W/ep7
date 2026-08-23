@@ -20,6 +20,7 @@ export type Ingredient = {
   unit: string
   calories: number
   category: string
+  notes?: string
 }
 
 export type RecipeIngredient = { ingredientId: string; amount: number }
@@ -33,12 +34,7 @@ export type Recipe = {
   tags: string[]
   ingredients: RecipeIngredient[]
   instructions: string[]
-}
-
-export type Block = {
-  id: string
-  label: string
-  points: string
+  isCustom?: boolean
 }
 
 export type BlockCaptain = {
@@ -48,6 +44,7 @@ export type BlockCaptain = {
   address: string | null
   phone: string | null
   is_public: boolean
+  building_id?: string | null
 }
 
 export type BlockHousehold = {
@@ -57,4 +54,31 @@ export type BlockHousehold = {
   address: string | null
   is_public: boolean
   notes?: string | null
+  building_id?: string | null
+}
+
+export type MealWishlistItem = {
+  recipeId: string
+  batches: number
+}
+
+export type HouseholdPlanRecord = {
+  custom_supplies?: Ingredient[]
+  custom_recipes?: Recipe[]
+  meal_wishlist?: MealWishlistItem[]
+}
+
+export type FamilyProfile = {
+  user_id: string
+  household_name: string | null
+  address: string | null
+  block_id: string | null
+  household_id: string | null
+}
+
+export type HouseholdPrivateDetail = {
+  household_id: string
+  needs: string
+  special_circumstances: string
+  updated_at?: string
 }

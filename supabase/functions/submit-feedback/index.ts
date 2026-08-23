@@ -41,7 +41,7 @@ Deno.serve(async (request) => {
         from,
         to: ['jaromwardwell@gmail.com'],
         reply_to: email ?? undefined,
-        subject: `[EP7 ${type === 'bug' ? 'Bug' : 'Idea'}] ${subject}`,
+        subject: `[Ward site ${type === 'bug' ? 'Bug' : 'Idea'}] ${subject}`,
         text: `${type.toUpperCase()} SUBMISSION\n\nFrom: ${name ?? 'Anonymous'}${email ? ` <${email}>` : ''}\n\n${message}`,
       }),
     })

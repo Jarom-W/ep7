@@ -1,6 +1,6 @@
-# Ready, EP7
+# Ready Together
 
-A full-stack emergency preparedness site for the Spanish Fork 7th Ward. The public site includes a PDF newsletter archive, standing emergency plan, private household food/water planner, pantry-driven meal forecasts, recipes, an interactive ward block map, and bug/feature feedback. A single specialist role manages shared content through Supabase Auth, Postgres, Storage, and Row Level Security.
+A full-stack emergency preparedness site for the Spanish Fork 7th Ward. The public site includes a live privacy-safe ward dashboard, PDF newsletter archive, standing emergency plan, private household food/water planner, pantry-driven meal forecasts, recipes, a code-drawn interactive ward block map, and bug/feature feedback. Families can create accounts to sync their progress, while the specialist role manages shared content through Supabase Auth, Postgres, Storage, and Row Level Security.
 
 ## Architecture
 
@@ -8,7 +8,8 @@ A full-stack emergency preparedness site for the Spanish Fork 7th Ward. The publ
 - Supabase Auth, Postgres, Storage, and Edge Functions
 - nginx container on the Pi, bound only to `127.0.0.1:8080`
 - Cloudflare Tunnel for public HTTPS; no router port-forward is required
-- Browser-local storage for household ages, pantry inventory, and water. This intentionally keeps personal planning data out of the public ward database.
+- Browser-local storage for guests, with optional private Supabase sync for signed-in families
+- A security-definer aggregate RPC for the public dashboard; it never returns individual family rows and suppresses preparedness measures until three families participate
 
 ## Local setup
 
@@ -31,10 +32,11 @@ Never put a Supabase service-role key, database password, Resend API key, admin 
 
 ## Supabase setup
 
-1. Create a Supabase project and run [the initial migration](supabase/migrations/20260809000000_initial_schema.sql) in its SQL editor. This creates all tables, RLS policies, the public PDF bucket, and the `is_admin()` authorization function.
-2. In Authentication, disable public sign-ups and create the specialist user manually with a strong password and MFA.
-3. Grant that user the specialist role by running the final commented query in the migration with the specialist email substituted.
-4. Install the Supabase CLI, link the project, and deploy the feedback function:
+1. Create a Supabase project and run all SQL files in `supabase/migrations/` in filename order. They create shared content, private family profiles/plans, the anonymous dashboard aggregate, the authenticated household directory, and ministering access controls.
+2. In Authentication, enable email/password sign-ups and require email confirmation. Add the production `/account` URL and local development `/account` URL to the allowed redirect URLs.
+3. Create the specialist user with a strong password and MFA. Ordinary family sign-ups never receive the specialist role.
+4. Grant that user the specialist role by running the final commented query in the initial migration with the specialist email substituted.
+5. Install the Supabase CLI, link the project, and deploy the feedback function:
 
    ```bash
    supabase login
@@ -42,11 +44,11 @@ Never put a Supabase service-role key, database password, Resend API key, admin 
    supabase functions deploy submit-feedback
    ```
 
-5. Create a Resend account, verify a sending domain, and add the server-only secrets:
+6. Create a Resend account, verify a sending domain, and add the server-only secrets:
 
    ```bash
    supabase secrets set RESEND_API_KEY=re_...
-   supabase secrets set FEEDBACK_FROM_EMAIL="Ready EP7 <feedback@YOUR_DOMAIN>"
+   supabase secrets set FEEDBACK_FROM_EMAIL="Ready Together <feedback@YOUR_DOMAIN>"
    ```
 
 Feedback is stored in Postgres for the admin inbox and emailed to `jaromwardwell@gmail.com`. The recipient is defined only in the Edge Function. The form includes input limits and a bot honeypot; add Cloudflare Turnstile before advertising the site broadly if spam becomes a problem.
@@ -86,8 +88,10 @@ In Cloudflare, enable Always Use HTTPS, Bot Fight Mode, and a conservative rate-
 ## Content and privacy notes
 
 - Newsletter and emergency-plan uploads accept PDFs up to 20 MB.
-- The map uses the specialist-provided `photos/block_map.jpg`, corrected for web display, with an SVG block layer in `src/data/blocks.ts`.
+- The signed-in map is fully code-drawn SVG from `src/data/neighborhood.ts` and `src/data/blockDetails.ts`; the reference photos are never displayed in the application.
 - Captains and households default to private. An admin must explicitly mark each record public after obtaining permission to publish the name/address/phone.
+- Family planner rows are protected by owner-only RLS. Ward administrators cannot read them through the application. The dashboard calls `ward_progress_stats()` and receives aggregates only.
+- The site stores only the account and preparedness fields a family chooses to enter, solely to sync progress. It does not sell the data or use it for advertising.
 - Calorie and water numbers are planning estimates, not medical advice. The interface tells visitors to adjust for weather, activity, health, pets, pregnancy, and nursing.
 - The recipe catalog currently contains 16 shelf-stable meals with gluten-free and dairy-free filters. Recipe quantities and calories are transparent estimates and can be extended in `src/data/recipes.ts`.
 

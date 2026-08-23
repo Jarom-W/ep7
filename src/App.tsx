@@ -1,24 +1,30 @@
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import Home from './pages/Home'
-import Library from './pages/Library'
-import Planner from './pages/Planner'
-import Recipes from './pages/Recipes'
-import BlockMap from './pages/BlockMap'
-import Specialist from './pages/Specialist'
-import Feedback from './pages/Feedback'
+import Welcome from './pages/Welcome'
+
+const Library = lazy(() => import('./pages/Library'))
+const Planner = lazy(() => import('./pages/Planner'))
+const Recipes = lazy(() => import('./pages/Recipes'))
+const BlockMap = lazy(() => import('./pages/BlockMap'))
+const Specialist = lazy(() => import('./pages/Specialist'))
+const Feedback = lazy(() => import('./pages/Feedback'))
+const Account = lazy(() => import('./pages/Account'))
 
 export default function App() {
-  return <Routes>
+  return <Suspense fallback={<div className="full-loader">Loading…</div>}><Routes>
     <Route element={<Layout />}>
-      <Route index element={<Home />} />
+      <Route index element={<Welcome />} />
+      <Route path="dashboard" element={<Home />} />
       <Route path="library" element={<Library />} />
       <Route path="planner" element={<Planner />} />
       <Route path="recipes" element={<Recipes />} />
       <Route path="block-map" element={<BlockMap />} />
       <Route path="specialist" element={<Specialist />} />
       <Route path="feedback" element={<Feedback />} />
+      <Route path="account" element={<Account />} />
       <Route path="*" element={<Home />} />
     </Route>
-  </Routes>
+  </Routes></Suspense>
 }

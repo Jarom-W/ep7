@@ -1,4 +1,4 @@
--- EP7 preparedness site: shared content, specialist role, public map, and feedback.
+-- Ward preparedness site: shared content, specialist role, private map, and feedback.
 -- Run with `supabase db push` or paste into the Supabase SQL editor once.
 
 create extension if not exists pgcrypto;
