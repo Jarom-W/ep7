@@ -27,7 +27,7 @@ type WardStats = {
 
 const emptyStats: WardStats = { households: 0, people: null, privacy_threshold_met: false, readiness_score: null, average_food_days: null, average_water_days: null, stored_water_gallons: null, stored_calories: null, ready_recipes: null, updated_this_week: null, water_3_pct: null, water_7_pct: null, water_14_pct: null, food_3_pct: null, food_7_pct: null, food_14_pct: null, blocks: 'ABCDEFGHIJKLMNOPQR'.split('').map((block_id) => ({ block_id, households: null, score: null })) }
 
-export default function Home() {
+export default function Home({ embedded = false }: { embedded?: boolean }) {
   const { session } = useAuth()
   const [stats, setStats] = useState<WardStats>(emptyStats)
   const [loading, setLoading] = useState(true)
@@ -54,7 +54,7 @@ export default function Home() {
   const targetPeople = Math.max(stats.people ?? 0, 1)
   const caloriesPerPerson = stats.stored_calories ? Math.round(stats.stored_calories / targetPeople) : 0
 
-  return <div className="ward-dashboard">
+  return <div id="ward-dashboard" className={embedded ? 'ward-dashboard ward-dashboard-embedded' : 'ward-dashboard'}>
     <section className="dashboard-masthead">
       <div className="page-width dashboard-titlebar">
         <div><span className="dashboard-kicker">Anonymous ward overview</span><h1>Ward preparedness dashboard</h1><p>See privacy-protected progress across participating households, then return to your own plan for the details only your family can access.</p></div>

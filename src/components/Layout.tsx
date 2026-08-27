@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { BookOpen, Bug, CircleHelp, ClipboardList, FileText, Gauge, Home, Map, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
+import { BookOpen, Bug, CircleHelp, ClipboardList, FileText, Home, Map, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 
 const nav = [
   { to: '/', label: 'Start here', icon: Home },
-  { to: '/dashboard', label: 'Ward dashboard', icon: Gauge },
   { to: '/library', label: 'News & plan', icon: FileText },
   { to: '/planner', label: 'My preparedness', icon: ClipboardList },
   { to: '/recipes', label: 'Pantry meals', icon: BookOpen },

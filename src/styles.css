@@ -536,6 +536,43 @@ footer p { max-width: 500px; margin: 8px 0 0; font-size: .86rem; }
 .dashboard-shortcuts b { font-size: .76rem; }
 .dashboard-shortcuts small { margin-top: 4px; color: var(--muted); font-size: .62rem; }
 
+/* Combined ward news, plan, and dashboard */
+.ward-hub-page { width: min(1380px, calc(100% - 48px)); }
+.ward-hub-page > .page-heading { max-width: 900px; }
+.ward-hub-grid { display: grid; grid-template-columns: minmax(320px, .72fr) minmax(0, 1.28fr); gap: 34px; align-items: start; }
+.ward-hub-library { min-width: 0; }
+.ward-hub-library .notice { align-items: flex-start; flex-direction: column; }
+.ward-hub-library .document-feature { padding: 26px; grid-template-columns: 52px 1fr; gap: 18px; align-items: start; scroll-margin-top: 100px; }
+.ward-hub-library .document-icon { width: 52px; height: 62px; }
+.ward-hub-library .document-feature h2 { font-size: 1.65rem; }
+.ward-hub-library .document-feature p { font-size: .75rem; line-height: 1.55; }
+.ward-hub-library .document-feature .button { grid-column: 1 / -1; width: 100%; }
+.ward-hub-library .newsletter-section { margin-top: 52px; scroll-margin-top: 100px; }
+.ward-hub-library .section-heading h2 { font-size: 2rem; }
+.ward-hub-library .document-row { grid-template-columns: 42px 1fr auto; gap: 12px; padding: 22px 0; }
+.ward-hub-library .document-row p { font-size: .7rem; line-height: 1.45; }
+
+.ward-dashboard-embedded { min-width: 0; padding: 0; background: transparent; scroll-margin-top: 96px; }
+.ward-dashboard-embedded .page-width { width: 100%; }
+.ward-dashboard-embedded .dashboard-masthead { border-radius: 5px; }
+.ward-dashboard-embedded .dashboard-titlebar { min-height: 0; padding: 34px; display: block; }
+.ward-dashboard-embedded .dashboard-titlebar h1 { margin-top: 13px; font-size: clamp(2.35rem, 4vw, 3.55rem); }
+.ward-dashboard-embedded .dashboard-titlebar p { font-size: .85rem; }
+.ward-dashboard-embedded .dashboard-commands { min-width: 0; margin-top: 25px; grid-template-columns: 1fr 1fr; }
+.ward-dashboard-embedded .dashboard-commands small { grid-column: 1 / -1; text-align: left; }
+.ward-dashboard-embedded .dashboard-ticker { height: auto; min-height: 54px; padding: 15px 24px; display: grid; grid-template-columns: 1fr 1fr; justify-content: stretch; }
+.ward-dashboard-embedded .dashboard-ticker span { white-space: normal; }
+.ward-dashboard-embedded .dashboard-notice,
+.ward-dashboard-embedded .threshold-notice { margin-top: 16px; }
+.ward-dashboard-embedded .dashboard-get-started { margin-top: 16px; grid-template-columns: 1fr; }
+.ward-dashboard-embedded .dashboard-get-started ol { grid-template-columns: 1fr; }
+.ward-dashboard-embedded .command-grid { margin-top: 16px; grid-template-columns: 1fr 1fr; }
+.ward-dashboard-embedded .participation-card { grid-column: 1 / -1; }
+.ward-dashboard-embedded .dashboard-row { grid-template-columns: 1fr; }
+.ward-dashboard-embedded .insight-strip { grid-template-columns: 1fr; gap: 20px; }
+.ward-dashboard-embedded .insight-stat { padding: 15px 0; border: 0; border-block: 1px solid #527267; }
+.ward-dashboard-embedded .dashboard-shortcuts { grid-template-columns: 1fr; }
+
 /* Family account and cloud sync */
 .auth-family-page { display: grid; grid-template-columns: 1fr 440px; gap: 8%; align-items: start; }
 .family-auth-copy > h1 { max-width: 680px; }
@@ -630,6 +667,7 @@ footer p { max-width: 500px; margin: 8px 0 0; font-size: .86rem; }
 .block-button-grid button { aspect-ratio: 1; border: 1px solid #ccd2cd; color: var(--green); background: #f6f6f2; font-family: 'DM Serif Display'; cursor: pointer; }.block-button-grid button:hover { color: white; background: var(--green); }
 
 @media (max-width: 980px) {
+  .ward-hub-grid { grid-template-columns: 1fr; }
   .command-grid { grid-template-columns: 1fr 1fr; }
   .participation-card { grid-column: 1 / -1; }
   .people-field { grid-template-columns: repeat(18, 1fr); }
@@ -638,6 +676,14 @@ footer p { max-width: 500px; margin: 8px 0 0; font-size: .86rem; }
 }
 
 @media (max-width: 700px) {
+  .ward-hub-page > .page-heading { margin-bottom: 32px; }
+  .ward-hub-library .document-feature { padding: 22px; }
+  .ward-dashboard-embedded .dashboard-titlebar { padding: 28px 22px; }
+  .ward-dashboard-embedded .dashboard-titlebar h1 { font-size: 2.7rem; }
+  .ward-dashboard-embedded .dashboard-commands,
+  .ward-dashboard-embedded .dashboard-ticker,
+  .ward-dashboard-embedded .command-grid { grid-template-columns: 1fr; }
+  .ward-dashboard-embedded .dashboard-commands small { grid-column: auto; }
   .ward-dashboard { padding-bottom: 70px; }
   .dashboard-titlebar { padding-block: 45px 30px; grid-template-columns: 1fr; gap: 25px; }
   .dashboard-titlebar h1 { font-size: 3.25rem; }

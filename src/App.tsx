@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
-import Home from './pages/Home'
 import Welcome from './pages/Welcome'
 
 const Library = lazy(() => import('./pages/Library'))
@@ -17,7 +16,7 @@ export default function App() {
   return <Suspense fallback={<div className="full-loader">Loading…</div>}><Routes>
     <Route element={<Layout />}>
       <Route index element={<Welcome />} />
-      <Route path="dashboard" element={<Home />} />
+      <Route path="dashboard" element={<Navigate to="/library#ward-dashboard" replace />} />
       <Route path="library" element={<Library />} />
       <Route path="planner" element={<Planner />} />
       <Route path="recipes" element={<Recipes />} />
@@ -26,7 +25,7 @@ export default function App() {
       <Route path="feedback" element={<Feedback />} />
       <Route path="account" element={<Account />} />
       <Route path="help" element={<Help />} />
-      <Route path="*" element={<Home />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   </Routes></Suspense>
 }

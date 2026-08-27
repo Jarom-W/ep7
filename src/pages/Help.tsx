@@ -88,9 +88,9 @@ export default function Help() {
         <section id="ward" className="help-chapter" data-help-reveal>
           <div className="chapter-heading"><span>05</span><div><small>Ward tools</small><h2>Coordinate without exposing a family’s pantry</h2></div></div>
           <div className="help-card-grid">
-            <article><Sparkles /><h3>Ward dashboard</h3><p>See privacy-safe participation, food and water milestones, readiness trends, and block-level signals. These are anonymous aggregates; they are not a directory of who has which supplies.</p><Link to="/dashboard">Open dashboard <ArrowRight /></Link></article>
+            <article><Sparkles /><h3>Ward dashboard</h3><p>News, the emergency plan, and the dashboard now share one ward resources page. The dashboard shows privacy-safe participation, food and water milestones, readiness trends, and block-level signals.</p><Link to="/library#ward-dashboard">Open dashboard <ArrowRight /></Link></article>
             <article><Map /><h3>Block map</h3><p>Signed-in ward families can open a block and find directory households that have been approved for display. Sensitive needs remain limited to the household, specialist, and explicitly authorized ministering assignments.</p><Link to="/block-map">Open map <ArrowRight /></Link></article>
-            <article><FileText /><h3>News & emergency plan</h3><p>The latest standing emergency plan appears first, followed by ward newsletters and preparedness documents. Shared content is published by the specialist.</p><Link to="/library">Open library <ArrowRight /></Link></article>
+            <article><FileText /><h3>News & emergency plan</h3><p>The latest standing emergency plan and ward newsletters appear in the left column beside the live dashboard. Shared content is published by the specialist.</p><Link to="/library#ward-plan">Open ward resources <ArrowRight /></Link></article>
           </div>
         </section>
 
