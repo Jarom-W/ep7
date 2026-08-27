@@ -28,7 +28,7 @@ export type RecipeIngredient = { ingredientId: string; amount: number }
 export type Recipe = {
   id: string
   name: string
-  description: string
+  description?: string
   servings: number
   minutes: number
   tags: string[]

@@ -6,6 +6,12 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
 type Mode = 'signin' | 'signup' | 'forgot'
 
+function profileMessage(errorMessage: string) {
+  return errorMessage.includes("'address' column") || errorMessage.includes('schema cache')
+    ? 'The deployed database is missing the latest family profile update. Apply the pending Supabase migrations, then try again.'
+    : errorMessage
+}
+
 export default function Account() {
   const { session, loading } = useAuth()
   const [params] = useSearchParams()
@@ -20,10 +26,11 @@ export default function Account() {
 
   useEffect(() => {
     if (!session || !supabase) return
-    supabase.from('family_profiles').select('household_name, address, block_id').eq('user_id', session.user.id).maybeSingle().then(({ data }) => {
-      setHouseholdName(data?.household_name ?? '')
-      setAddress(data?.address ?? '')
-      setBlockId(data?.block_id ?? '')
+    supabase.from('family_profiles').select('household_name, address, block_id').eq('user_id', session.user.id).maybeSingle().then(({ data, error }) => {
+      if (error) setMessage(profileMessage(error.message))
+      setHouseholdName(data?.household_name ?? String(session.user.user_metadata.household_name ?? ''))
+      setAddress(data?.address ?? String(session.user.user_metadata.address ?? ''))
+      setBlockId(data?.block_id ?? String(session.user.user_metadata.block_id ?? ''))
     })
   }, [session])
 
@@ -41,8 +48,8 @@ export default function Account() {
       const name = String(form.get('household_name'))
       const address = String(form.get('address')).trim()
       const blockId = String(form.get('block_id')).toUpperCase()
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { household_name: name, address, block_id: blockId }, emailRedirectTo: `${window.location.origin}/account` } })
-      setMessage(error?.message ?? (data.session ? 'Your account is ready.' : 'Check your email to confirm your account, then sign in.'))
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { household_name: name, address, block_id: blockId } } })
+      setMessage(error?.message ?? (data.session ? 'Your account is ready and you are signed in.' : 'Account created, but Confirm Email is still enabled in the hosted Supabase project. Disable it under Authentication → Providers → Email to allow immediate sign-in.'))
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password: String(form.get('password')) })
       setMessage(error?.message ?? '')
@@ -56,7 +63,7 @@ export default function Account() {
     setBusy(true)
     if (!address.trim() || !blockId) { setMessage('Address and block are required for private directory access.'); setBusy(false); return }
     const { error } = await supabase.from('family_profiles').upsert({ user_id: session.user.id, household_name: householdName.trim() || null, address: address.trim(), block_id: blockId })
-    setMessage(error?.message ?? 'Profile saved.')
+    setMessage(error ? profileMessage(error.message) : 'Profile saved.')
     setBusy(false)
   }
 
@@ -101,6 +108,7 @@ export default function Account() {
     <form className="family-auth-form" onSubmit={submitAuth}>
       <div className="auth-mode-icon">{mode === 'signup' ? <UserPlus /> : <LogIn />}</div>
       <h2>{mode === 'signup' ? 'Create family account' : mode === 'forgot' ? 'Password help' : 'Family sign in'}</h2>
+      {mode === 'signup' && <div className="no-confirm-note"><Check /><span><b>No confirmation step.</b> Create your account and begin planning immediately—no inbox visit required.</span></div>}
       {mode === 'signup' && <label><span>Household name <small>optional</small></span><input name="household_name" maxLength={80} autoComplete="organization" placeholder="The Rivera household" /></label>}
       {mode === 'signup' && <><label><span>Home address</span><input required name="address" maxLength={180} autoComplete="street-address" placeholder="496 N 500 E" /></label><label><span>Ward block</span><select required name="block_id" defaultValue=""><option value="" disabled>Select your block</option>{'ABCDEFGHIJKLMNOPQR'.split('').map((block) => <option key={block} value={block}>Block {block}</option>)}</select></label></>}
       <label><span>Email address</span><div className="input-with-icon"><Mail /><input required name="email" type="email" autoComplete="email" /></div></label>

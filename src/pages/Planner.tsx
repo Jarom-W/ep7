@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { ChefHat, ChevronDown, Cloud, CloudOff, Droplets, Heart, Info, Minus, PackagePlus, Plus, RotateCcw, Save, ShieldCheck, Trash2, Users, Utensils } from 'lucide-react'
+import { ChefHat, ChevronDown, Cloud, CloudOff, Droplets, Heart, Info, Minus, PackagePlus, Plus, RotateCcw, Save, Search, ShieldCheck, Trash2, Users, Utensils } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ingredients, recipes } from '../data/recipes'
 import { householdNeeds, inventoryCalories, litersPerGallon, recipeCapacity, recipeProgress } from '../lib/planner'
@@ -22,6 +22,7 @@ export default function Planner() {
   const [addingSupply, setAddingSupply] = useState(false)
   const [addingRecipe, setAddingRecipe] = useState(false)
   const [recipeIngredientAmounts, setRecipeIngredientAmounts] = useState<Record<string, number>>({})
+  const [ingredientQuery, setIngredientQuery] = useState('')
   const [category, setCategory] = useState('All')
   const [cloudReady, setCloudReady] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -33,6 +34,7 @@ export default function Planner() {
   const foodDays = needs.calories ? calories / needs.calories : 0
   const waterDays = needs.waterLiters ? waterLiters / needs.waterLiters : 0
   const categories = ['All', ...new Set(allIngredients.map((item) => item.category))]
+  const visibleRecipeIngredients = useMemo(() => allIngredients.filter((item) => item.name.toLowerCase().includes(ingredientQuery.trim().toLowerCase())), [allIngredients, ingredientQuery])
   const readyRecipeCount = useMemo(() => allRecipes.filter((recipe) => recipeCapacity(recipe, inventory) > 0).length, [allRecipes, inventory])
   const wishlistNeeds = useMemo(() => {
     const totals = new Map<string, number>()
@@ -102,7 +104,14 @@ export default function Planner() {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const name = String(form.get('name')).trim()
-    const supply: Ingredient = { id: `custom-${crypto.randomUUID()}`, name, unit: String(form.get('unit')).trim(), calories: Math.max(0, Number(form.get('calories'))), category: String(form.get('category')), notes: String(form.get('notes')).trim() }
+    const supply: Ingredient = {
+      id: `custom-${crypto.randomUUID()}`,
+      name,
+      unit: String(form.get('unit')).trim(),
+      calories: Math.max(0, Number(form.get('calories'))),
+      category: String(form.get('category')),
+      notes: String(form.get('notes')).trim(),
+    }
     setCustomSupplies((current) => [...current, supply])
     setAddingSupply(false)
     event.currentTarget.reset()
@@ -116,7 +125,6 @@ export default function Planner() {
     const recipe: Recipe = {
       id: `custom-recipe-${crypto.randomUUID()}`,
       name: String(form.get('name')).trim(),
-      description: String(form.get('description')).trim(),
       servings: Math.max(1, Number(form.get('servings'))),
       minutes: Math.max(0, Number(form.get('minutes'))),
       tags: String(form.get('tags')).split(',').map((tag) => tag.trim()).filter(Boolean),
@@ -126,6 +134,7 @@ export default function Planner() {
     }
     setCustomRecipes((current) => [...current, recipe])
     setRecipeIngredientAmounts({})
+    setIngredientQuery('')
     setAddingRecipe(false)
     event.currentTarget.reset()
   }
@@ -165,8 +174,13 @@ export default function Planner() {
       <div className="guidance-note"><Info size={18} /><p>Planning estimates use age-based calorie ranges and a conservative drinking/cooking water minimum. Store more for hot weather, sanitation, pets, pregnancy, nursing, illness, or strenuous activity.</p></div>
 
       <section className="supply-section">
-        <div className="section-heading inline"><div><span className="eyebrow">Step 1</span><h2>Add your supplies</h2></div><button className="button secondary" onClick={() => setAddingSupply(!addingSupply)}><PackagePlus size={18} /> {addingSupply ? 'Cancel' : 'Create a supply'}</button></div>
-        {addingSupply && <form className="custom-entry-form" onSubmit={addCustomSupply}><div className="custom-form-heading"><PackagePlus /><div><h3>Create a pantry supply</h3><p>Add the package size and nutrition information you actually buy.</p></div></div><div className="form-row"><label><span>Supply name</span><input required name="name" placeholder="Quinoa" /></label><label><span>Category</span><select required name="category" defaultValue="Grains"><option>Grains</option><option>Protein</option><option>Fruit</option><option>Vegetables</option><option>Dairy</option><option>Soups</option><option>Baking</option><option>Cooking</option><option>Snacks</option><option>Other</option></select></label></div><div className="form-row"><label><span>Tracking unit</span><input required name="unit" placeholder="bag, can, cup…" /></label><label><span>Calories per unit</span><input required name="calories" type="number" min="0" step="1" placeholder="1200" /></label></div><label><span>Storage or preparation notes <small>optional</small></span><textarea name="notes" rows={2} placeholder="16 oz bag; requires water and 15 minutes of cooking" /></label><button className="button primary"><Save /> Add supply</button></form>}
+        <div className="section-heading inline"><div><span className="eyebrow">Step 1</span><h2>Add your supplies</h2></div><button className="button secondary" onClick={() => setAddingSupply(!addingSupply)}><PackagePlus size={18} /> {addingSupply ? 'Cancel' : 'Add an Ingredient'}</button></div>
+        {addingSupply && <form className="custom-entry-form" onSubmit={addCustomSupply}>
+          <div className="custom-form-heading"><PackagePlus /><div><h3>Add a pantry ingredient</h3><p>Add the package size and calorie information from the food label you actually buy.</p></div></div>
+          <div className="form-row"><label><span>Ingredient name</span><input required name="name" placeholder="Quinoa" /></label><label><span>Category</span><select required name="category" defaultValue="Grains"><option>Grains</option><option>Protein</option><option>Fruit</option><option>Vegetables</option><option>Dairy</option><option>Soups</option><option>Baking</option><option>Cooking</option><option>Snacks</option><option>Other</option></select></label></div>
+          <div className="form-row"><label><span>Tracking unit</span><input required name="unit" placeholder="bag, can, cup…" /></label><label><span>Calories per unit</span><input required name="calories" type="number" min="0" step="1" placeholder="1200" /></label></div>
+          <label><span>Storage or preparation notes <small>optional</small></span><textarea name="notes" rows={2} placeholder="16 oz bag; requires water and 15 minutes of cooking" /></label><button className="button primary"><Save /> Add ingredient</button>
+        </form>}
         <div className="water-entry-card">
           <div><Droplets /><span><b>Stored water</b><small>Include sealed bottles and containers</small></span></div>
           <div className="water-control"><input aria-label="Stored water" type="number" min="0" step="0.5" value={Number((waterUnit === 'gallons' ? waterLiters / litersPerGallon : waterLiters).toFixed(2))} onChange={(event) => changeWater(Number(event.target.value))} /><select value={waterUnit} onChange={(event) => setWaterUnit(event.target.value as 'gallons' | 'liters')}><option value="gallons">gallons</option><option value="liters">liters</option></select></div>
@@ -185,7 +199,17 @@ export default function Planner() {
 
       <section className="forecast-section">
         <div className="section-heading inline"><div><span className="eyebrow">Step 2</span><h2>Build meals your family enjoys</h2><p>Meal counts show full recipe batches, not individual servings.</p></div><button className="button secondary" onClick={() => setAddingRecipe(!addingRecipe)}><ChefHat size={18} /> {addingRecipe ? 'Cancel' : 'Create a meal'}</button></div>
-        {addingRecipe && <form className="custom-entry-form custom-recipe-form" onSubmit={addCustomRecipe}><div className="custom-form-heading"><ChefHat /><div><h3>Create a pantry meal</h3><p>Use default or custom supplies, then record enough detail to make it during an emergency.</p></div></div><div className="form-row"><label><span>Meal name</span><input required name="name" placeholder="Grandma’s lentil stew" /></label><label><span>Tags <small>comma separated</small></span><input name="tags" placeholder="One pot, Family favorite" /></label></div><div className="form-row"><label><span>Servings per batch</span><input required name="servings" type="number" min="1" defaultValue="4" /></label><label><span>Preparation time in minutes</span><input required name="minutes" type="number" min="0" defaultValue="20" /></label></div><label><span>Description</span><textarea required name="description" rows={2} /></label><fieldset className="recipe-supply-picker"><legend>Supplies for one batch</legend>{allIngredients.map((ingredient) => <label key={ingredient.id}><span>{ingredient.name}<small>{ingredient.unit}</small></span><input aria-label={`${ingredient.name} amount`} type="number" min="0" step="0.05" value={recipeIngredientAmounts[ingredient.id] ?? ''} onChange={(event) => setRecipeIngredientAmounts((current) => ({ ...current, [ingredient.id]: Number(event.target.value) }))} /></label>)}</fieldset><label><span>Directions <small>one step per line</small></span><textarea required name="instructions" rows={5} placeholder={'Combine ingredients.\nSimmer until tender.\nSeason and serve.'} /></label><button className="button primary" disabled={!Object.values(recipeIngredientAmounts).some((amount) => amount > 0)}><Save /> Add pantry meal</button></form>}
+        {addingRecipe && <form className="custom-entry-form custom-recipe-form" onSubmit={addCustomRecipe}>
+          <div className="custom-form-heading"><ChefHat /><div><h3>Create a pantry meal</h3><p>Use default or custom ingredients, then record enough detail to make it during an emergency.</p></div></div>
+          <div className="form-row"><label><span>Meal name</span><input required name="name" placeholder="Grandma’s lentil stew" /></label><label><span>Tags <small>comma separated</small></span><input name="tags" placeholder="One pot, Family favorite" /></label></div>
+          <div className="form-row"><label><span>Servings per batch</span><input required name="servings" type="number" min="1" defaultValue="4" /></label><label><span>Preparation time in minutes</span><input required name="minutes" type="number" min="0" defaultValue="20" /></label></div>
+          <div className="ingredient-picker-heading"><div><b>Ingredient for one batch</b><small>Enter an amount beside every ingredient this meal uses.</small></div><label className="ingredient-search"><Search /><span className="sr-only">Search ingredients</span><input type="search" value={ingredientQuery} onChange={(event) => setIngredientQuery(event.target.value)} placeholder="Search ingredients…" /></label></div>
+          <fieldset className="recipe-supply-picker" aria-label="Ingredient for one batch">
+            {visibleRecipeIngredients.map((ingredient) => <label className={(recipeIngredientAmounts[ingredient.id] ?? 0) > 0 ? 'selected' : ''} key={ingredient.id}><span>{ingredient.name}<small>{ingredient.unit}</small></span><input aria-label={`${ingredient.name} amount`} type="number" min="0" step="0.05" value={recipeIngredientAmounts[ingredient.id] ?? ''} onChange={(event) => setRecipeIngredientAmounts((current) => ({ ...current, [ingredient.id]: Number(event.target.value) }))} /></label>)}
+            {!visibleRecipeIngredients.length && <div className="ingredient-empty"><Search /><span>No ingredients match “{ingredientQuery}”.</span></div>}
+          </fieldset>
+          <label><span>Directions <small>one step per line</small></span><textarea required name="instructions" rows={5} placeholder={'Combine ingredients.\nSimmer until tender.\nSeason and serve.'} /></label><button className="button primary" disabled={!Object.values(recipeIngredientAmounts).some((amount) => amount > 0)}><Save /> Add pantry meal</button>
+        </form>}
         <div className="forecast-banner">
           <div><span>Food energy on hand</span><strong>{Math.round(calories).toLocaleString()} <small>calories</small></strong></div>
           <div className="forecast-days"><span>Estimated coverage</span><strong>{foodDays.toFixed(1)} <small>days</small></strong></div>
@@ -195,15 +219,17 @@ export default function Planner() {
         <div className="meal-progress-grid">{allRecipes.map((recipe) => {
           const progress = recipeProgress(recipe, inventory)
           const capacity = recipeCapacity(recipe, inventory)
+          const ingredientNames = recipe.ingredients.map((needed) => allIngredients.find((item) => item.id === needed.ingredientId)?.name).filter(Boolean)
           return <article className="meal-progress" key={recipe.id}>
             <div><span>{recipe.tags[0]}</span><h3>{recipe.name}</h3><small>{recipe.servings} servings per batch</small></div>
+            <div className="meal-ingredient-glimpse"><span>Ingredients</span><p>{ingredientNames.slice(0, 3).join(' · ')}{ingredientNames.length > 3 ? ` + ${ingredientNames.length - 3} more` : ''}</p></div>
             <strong>{capacity}<small> batches ready</small></strong>
             <span>{members.length ? Math.floor(capacity * recipe.servings / members.length) : 0} complete household meals</span>
             <div className="progress"><i style={{ width: `${progress}%` }} /></div><span>{progress}% of one batch stocked</span>
             <details><summary>What’s still needed <ChevronDown size={15} /></summary><ul>{recipe.ingredients.map((needed) => {
-              const ingredient = allIngredients.find((item) => item.id === needed.ingredientId)!
+              const ingredient = allIngredients.find((item) => item.id === needed.ingredientId)
               const owned = inventory.find((item) => item.ingredientId === needed.ingredientId)?.quantity ?? 0
-              return <li key={needed.ingredientId}><span>{ingredient.name}</span><b>{Math.max(0, needed.amount - owned).toFixed(1)} {ingredient.unit}</b></li>
+              return <li key={needed.ingredientId}><span>{ingredient?.name ?? 'Unavailable ingredient'}</span><b>{Math.max(0, needed.amount - owned).toFixed(1)} {ingredient?.unit ?? 'unit'}</b></li>
             })}</ul></details><div className="meal-card-actions"><button onClick={() => changeWishlist(recipe.id, 1)}><Heart /> Add to wishlist</button>{recipe.isCustom && <button onClick={() => { setCustomRecipes((current) => current.filter((item) => item.id !== recipe.id)); setMealWishlist((current) => current.filter((item) => item.recipeId !== recipe.id)) }}><Trash2 /> Remove custom meal</button>}</div>
           </article>
         })}</div>
@@ -213,6 +239,7 @@ export default function Planner() {
         <div className="section-heading"><span className="eyebrow">Step 3</span><h2>Plan the meals you want to have.</h2><p>Choose target batches and the planner will combine every ingredient into one private supply list.</p></div>
         {!mealWishlist.length ? <div className="empty-state"><Heart /><h3>Your meal wishlist is empty.</h3><p>Add a favorite meal above to begin planning quantities.</p></div> : <div className="wishlist-layout"><div className="wishlist-meals">{mealWishlist.map((wish) => { const recipe = allRecipes.find((item) => item.id === wish.recipeId); if (!recipe) return null; return <article key={wish.recipeId}><div><b>{recipe.name}</b><small>{wish.batches * recipe.servings} planned servings</small></div><div className="stepper"><button onClick={() => changeWishlist(wish.recipeId, -1)}><Minus /></button><strong>{wish.batches}</strong><button onClick={() => changeWishlist(wish.recipeId, 1)}><Plus /></button></div></article> })}</div><aside className="wishlist-needs"><h3>Combined supply needs</h3><ul>{wishlistNeeds.map((item) => <li key={item.ingredientId} className={item.needed === 0 ? 'stocked' : ''}><span><b>{item.name}</b><small>{Number(item.required.toFixed(2))} {item.unit} planned · {Number(item.owned.toFixed(2))} on hand</small></span><strong>{item.needed === 0 ? 'Stocked' : `${Number(item.needed.toFixed(2))} ${item.unit} needed`}</strong></li>)}</ul></aside></div>}
       </section>
+
     </div>
   )
 }

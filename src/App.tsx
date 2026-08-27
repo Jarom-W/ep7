@@ -11,6 +11,7 @@ const BlockMap = lazy(() => import('./pages/BlockMap'))
 const Specialist = lazy(() => import('./pages/Specialist'))
 const Feedback = lazy(() => import('./pages/Feedback'))
 const Account = lazy(() => import('./pages/Account'))
+const Help = lazy(() => import('./pages/Help'))
 
 export default function App() {
   return <Suspense fallback={<div className="full-loader">Loading…</div>}><Routes>
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="specialist" element={<Specialist />} />
       <Route path="feedback" element={<Feedback />} />
       <Route path="account" element={<Account />} />
+      <Route path="help" element={<Help />} />
       <Route path="*" element={<Home />} />
     </Route>
   </Routes></Suspense>

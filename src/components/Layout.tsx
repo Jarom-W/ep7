@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { BookOpen, Bug, ClipboardList, FileText, Gauge, Home, Map, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
+import { BookOpen, Bug, CircleHelp, ClipboardList, FileText, Gauge, Home, Map, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 
 const nav = [
@@ -10,6 +10,7 @@ const nav = [
   { to: '/planner', label: 'My preparedness', icon: ClipboardList },
   { to: '/recipes', label: 'Pantry meals', icon: BookOpen },
   { to: '/block-map', label: 'Block map', icon: Map },
+  { to: '/help', label: 'Help', icon: CircleHelp },
 ]
 
 export default function Layout() {
@@ -46,6 +47,7 @@ export default function Layout() {
         <div className="footer-links">
           <Link to="/library">Emergency plan</Link>
           <Link to="/block-map">Find your block</Link>
+          <Link to="/help"><CircleHelp size={14} /> How to use the site</Link>
           <Link to="/feedback"><Bug size={14} /> Report a bug or idea</Link>
           <Link to="/specialist">Specialist sign in</Link>
         </div>

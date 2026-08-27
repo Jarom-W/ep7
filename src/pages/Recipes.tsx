@@ -68,23 +68,25 @@ export default function Recipes() {
     <div className="recipe-layout">
       <div className="recipe-list">{visible.map((recipe) => {
         const progress = recipeProgress(recipe, inventory)
+        const ingredientNames = recipe.ingredients.map((item) => allIngredients.find((ingredient) => ingredient.id === item.ingredientId)?.name).filter(Boolean)
         return <button key={recipe.id} className={selected.id === recipe.id ? 'recipe-card selected' : 'recipe-card'} onClick={() => setSelectedId(recipe.id)}>
           <div className="recipe-card-top"><span>{recipe.tags[0]}</span>{recipeCapacity(recipe, inventory) > 0 && <i><Check size={12} /> Ready</i>}</div>
-          <h2>{recipe.name}</h2><p>{recipe.description}</p>
+          <h2>{recipe.name}</h2>{recipe.description && <p>{recipe.description}</p>}
+          <div className="recipe-ingredient-preview"><span>Ingredients</span><b>{ingredientNames.slice(0, 3).join(' · ')}{ingredientNames.length > 3 ? ` + ${ingredientNames.length - 3} more` : ''}</b></div>
           <div className="recipe-meta"><span><Clock3 /> {recipe.minutes} min</span><span><Users /> {recipe.servings}</span><b>{progress}% stocked</b></div>
           <div className="progress"><i style={{ width: `${progress}%` }} /></div>
         </button>
       })}</div>
       <aside className="recipe-detail">
-        <span className="eyebrow">Recipe details</span><h2>{selected.name}</h2><p>{selected.description}</p>
+        <span className="eyebrow">Recipe details</span><h2>{selected.name}</h2>{selected.description && <p>{selected.description}</p>}
         <div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
         <div className="batch-target"><label><span>Plan batches</span><input type="number" min="1" max="100" value={targetBatches} onChange={(event) => setTargetBatches(Math.max(1, Number(event.target.value)))} /></label><strong>{targetBatches * selected.servings}<small> total servings</small></strong></div>
-        <h3>Supplies for {targetBatches} {targetBatches === 1 ? 'batch' : 'batches'}</h3>
+        <h3>Ingredients for {targetBatches} {targetBatches === 1 ? 'batch' : 'batches'}</h3>
         <ul className="ingredient-list">{selected.ingredients.map((item) => {
-          const ingredient = allIngredients.find((entry) => entry.id === item.ingredientId)!
+          const ingredient = allIngredients.find((entry) => entry.id === item.ingredientId)
           const owned = inventory.find((entry) => entry.ingredientId === item.ingredientId)?.quantity ?? 0
           const required = item.amount * targetBatches
-          return <li key={item.ingredientId}><span>{ingredient.name}<small>{owned >= required ? 'Enough in your pantry' : `${Math.max(0, required - owned).toFixed(1)} more needed`}</small></span><b>{Number(required.toFixed(2))} {ingredient.unit}</b></li>
+          return <li key={item.ingredientId}><span>{ingredient?.name ?? 'Unavailable ingredient'}<small>{owned >= required ? 'Enough in your pantry' : `${Math.max(0, required - owned).toFixed(1)} more needed`}</small></span><b>{Number(required.toFixed(2))} {ingredient?.unit ?? 'unit'}</b></li>
         })}</ul><button className="button wishlist-button" onClick={() => addToWishlist(selected.id)}><Heart /> Add {selected.name} to wishlist{wishlist.find((item) => item.recipeId === selected.id) ? ` · ${wishlist.find((item) => item.recipeId === selected.id)!.batches} planned` : ''}</button>
         <h3>Directions</h3><ol>{selected.instructions.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
         <p className="recipe-safety"><b>Safety note:</b> Use safe water, observe food allergy needs, and refrigerate leftovers within two hours when refrigeration is available.</p>

@@ -33,18 +33,19 @@ Never put a Supabase service-role key, database password, Resend API key, admin 
 ## Supabase setup
 
 1. Create a Supabase project and run all SQL files in `supabase/migrations/` in filename order. They create shared content, private family profiles/plans, the anonymous dashboard aggregate, the authenticated household directory, and ministering access controls.
-2. In Authentication, enable email/password sign-ups and require email confirmation. Add the production `/account` URL and local development `/account` URL to the allowed redirect URLs.
+2. In **Authentication → Providers → Email**, enable email/password sign-ups and turn **Confirm email** off. New family accounts then receive a session immediately and do not use Supabase's limited signup email service. Keep the email address as the account username; password-reset emails still require a working mail path. The local/self-hosted equivalent is already set with `auth.email.enable_confirmations = false` in `supabase/config.toml`.
 3. Create the specialist user with a strong password and MFA. Ordinary family sign-ups never receive the specialist role.
 4. Grant that user the specialist role by running the final commented query in the initial migration with the specialist email substituted.
-5. Install the Supabase CLI, link the project, and deploy the feedback function:
+5. Install the Supabase CLI, link the project, apply every pending migration, and deploy the Edge Functions:
 
    ```bash
    supabase login
    supabase link --project-ref YOUR_PROJECT_REF
+   supabase db push
    supabase functions deploy submit-feedback
    ```
 
-6. Create a Resend account, verify a sending domain, and add the server-only secrets:
+6. Create a Resend account, verify a sending domain, and add the server-only feedback secrets:
 
    ```bash
    supabase secrets set RESEND_API_KEY=re_...
@@ -52,6 +53,8 @@ Never put a Supabase service-role key, database password, Resend API key, admin 
    ```
 
 Feedback is stored in Postgres for the admin inbox and emailed to `jaromwardwell@gmail.com`. The recipient is defined only in the Edge Function. The form includes input limits and a bot honeypot; add Cloudflare Turnstile before advertising the site broadly if spam becomes a problem.
+
+Because confirmation-free email registration cannot prove that a visitor owns the address they enter, enable Supabase CAPTCHA protection before broad public promotion and do not use an email address as proof of ward membership. Directory visibility still depends on authenticated access and administrator-approved household records.
 
 ## Raspberry Pi 4B deployment
 
