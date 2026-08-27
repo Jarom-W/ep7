@@ -552,7 +552,9 @@ footer p { max-width: 500px; margin: 8px 0 0; font-size: .86rem; }
 .ward-hub-library .document-row { grid-template-columns: 42px 1fr auto; gap: 12px; padding: 22px 0; }
 .ward-hub-library .document-row p { font-size: .7rem; line-height: 1.45; }
 
-.ward-dashboard-embedded { min-width: 0; padding: 0; background: transparent; scroll-margin-top: 96px; }
+.ward-dashboard-embedded { display: contents; }
+.ward-dashboard-embedded .dashboard-overview { min-width: 0; grid-column: 2; scroll-margin-top: 96px; }
+.ward-dashboard-embedded .dashboard-continuation { min-width: 0; grid-column: 1 / -1; }
 .ward-dashboard-embedded .page-width { width: 100%; }
 .ward-dashboard-embedded .dashboard-masthead { border-radius: 5px; }
 .ward-dashboard-embedded .dashboard-titlebar { min-height: 0; padding: 34px; display: block; }
@@ -566,12 +568,8 @@ footer p { max-width: 500px; margin: 8px 0 0; font-size: .86rem; }
 .ward-dashboard-embedded .threshold-notice { margin-top: 16px; }
 .ward-dashboard-embedded .dashboard-get-started { margin-top: 16px; grid-template-columns: 1fr; }
 .ward-dashboard-embedded .dashboard-get-started ol { grid-template-columns: 1fr; }
-.ward-dashboard-embedded .command-grid { margin-top: 16px; grid-template-columns: 1fr 1fr; }
-.ward-dashboard-embedded .participation-card { grid-column: 1 / -1; }
-.ward-dashboard-embedded .dashboard-row { grid-template-columns: 1fr; }
-.ward-dashboard-embedded .insight-strip { grid-template-columns: 1fr; gap: 20px; }
-.ward-dashboard-embedded .insight-stat { padding: 15px 0; border: 0; border-block: 1px solid #527267; }
-.ward-dashboard-embedded .dashboard-shortcuts { grid-template-columns: 1fr; }
+.ward-dashboard-embedded .dashboard-continuation .command-grid,
+.ward-dashboard-embedded .dashboard-continuation .dashboard-row { margin-top: 0; }
 
 /* Family account and cloud sync */
 .auth-family-page { display: grid; grid-template-columns: 1fr 440px; gap: 8%; align-items: start; }
@@ -668,6 +666,8 @@ footer p { max-width: 500px; margin: 8px 0 0; font-size: .86rem; }
 
 @media (max-width: 980px) {
   .ward-hub-grid { grid-template-columns: 1fr; }
+  .ward-dashboard-embedded .dashboard-overview,
+  .ward-dashboard-embedded .dashboard-continuation { grid-column: 1; }
   .command-grid { grid-template-columns: 1fr 1fr; }
   .participation-card { grid-column: 1 / -1; }
   .people-field { grid-template-columns: repeat(18, 1fr); }

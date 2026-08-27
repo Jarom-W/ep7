@@ -54,7 +54,8 @@ export default function Home({ embedded = false }: { embedded?: boolean }) {
   const targetPeople = Math.max(stats.people ?? 0, 1)
   const caloriesPerPerson = stats.stored_calories ? Math.round(stats.stored_calories / targetPeople) : 0
 
-  return <div id="ward-dashboard" className={embedded ? 'ward-dashboard ward-dashboard-embedded' : 'ward-dashboard'}>
+  return <div className={embedded ? 'ward-dashboard ward-dashboard-embedded' : 'ward-dashboard'}>
+    <div id="ward-dashboard" className="dashboard-overview">
     <section className="dashboard-masthead">
       <div className="page-width dashboard-titlebar">
         <div><span className="dashboard-kicker">Anonymous ward overview</span><h1>Ward preparedness dashboard</h1><p>See privacy-protected progress across participating households, then return to your own plan for the details only your family can access.</p></div>
@@ -78,7 +79,9 @@ export default function Home({ embedded = false }: { embedded?: boolean }) {
       <ol><li><span>1</span><div><b>Create or sign in to your household account.</b><p>Your private plan and map access follow you across devices.</p></div></li><li><span>2</span><div><b>Add water, supplies, and meals you actually use.</b><p>Custom items and family recipes are welcome.</p></div></li><li><span>3</span><div><b>Choose a few wishlist meals.</b><p>The planner calculates the combined supplies still needed.</p></div></li></ol>
       <Link className="button primary" to={session ? '/planner' : '/account?mode=signup'}>{session ? 'Continue my plan' : 'Create my plan'} <ArrowRight /></Link>
     </section>
+    </div>
 
+    <div className="dashboard-continuation">
     <section className="page-width command-grid">
       <article className="readiness-dial-card dashboard-card">
         <div className="card-label"><Gauge /> Ward readiness index <span>14-day target</span></div>
@@ -114,7 +117,6 @@ export default function Home({ embedded = false }: { embedded?: boolean }) {
         <div className="participation-foot"><span><Activity /> {value(stats.updated_this_week)} active this week</span><Link to={session ? '/planner' : '/account?mode=signup'}>{session ? 'Check in' : 'Join the effort'} <ArrowRight /></Link></div>
       </article>
     </section>
-
     <section className="page-width dashboard-row">
       <article className="milestone-card dashboard-card">
         <div className="card-label"><CheckCircle2 /> Household milestones <span>Percentage of participating families</span></div>
@@ -142,6 +144,7 @@ export default function Home({ embedded = false }: { embedded?: boolean }) {
       <Link to="/block-map"><Users /><span><b>Know your block</b><small>Find your captain and nearby households</small></span><ArrowRight /></Link>
       <Link to="/library"><Clock3 /><span><b>Read the current plan</b><small>Know what happens before it happens</small></span><ArrowRight /></Link>
     </section>
+    </div>
   </div>
 }
 
