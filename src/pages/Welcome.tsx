@@ -26,7 +26,7 @@ export default function Welcome() {
     <section className="welcome-path">
       <div className="page-width welcome-section-heading" data-reveal><span className="eyebrow">A calm place to begin</span><h2>Start with what you know. Build from there.</h2><p>You do not need a perfect plan on day one. The site guides you through a few useful choices and saves your place.</p></div>
       <div className="page-width welcome-steps">
-        <article data-reveal><div className="step-number">01</div><UserPlus /><h3>Create your household</h3><p>Add your address, block, and household ages. Your account unlocks the private map and keeps every plan synced.</p><Link to="/account?mode=signup">Create an account <ArrowRight /></Link></article>
+        <article data-reveal><div className="step-number">01</div><UserPlus /><h3>Create your household</h3><p>Enter your address and let the mapped streets suggest your ward block. Your account unlocks the private map and keeps every plan synced.</p><Link to="/account?mode=signup">Create an account <ArrowRight /></Link></article>
         <article data-reveal><div className="step-number">02</div><PackagePlus /><h3>Make the pantry yours</h3><p>Use the starter supplies or add the exact grains, proteins, fruit, packages, and calorie information your family buys.</p><Link to="/planner">Build my pantry <ArrowRight /></Link></article>
         <article data-reveal><div className="step-number">03</div><Utensils /><h3>Plan food you enjoy</h3><p>Create familiar pantry meals, choose how many you want, and see the combined quantities still needed.</p><Link to="/recipes">Explore meals <ArrowRight /></Link></article>
       </div>

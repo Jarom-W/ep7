@@ -1,7 +1,8 @@
-import { type FormEvent, useEffect, useState } from 'react'
-import { Check, Cloud, Eye, EyeOff, LockKeyhole, LogIn, LogOut, Mail, ShieldCheck, UserPlus } from 'lucide-react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { Check, Cloud, Eye, EyeOff, LockKeyhole, LogIn, LogOut, Mail, MapPin, Search, ShieldCheck, UserPlus } from 'lucide-react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
+import { confidentBlockForAddress, suggestBlocksForAddress } from '../lib/blockLookup'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 
 type Mode = 'signin' | 'signup' | 'forgot'
@@ -23,6 +24,11 @@ export default function Account() {
   const [address, setAddress] = useState('')
   const [blockId, setBlockId] = useState('')
   const [newPassword, setNewPassword] = useState('')
+
+  function changeAddress(value: string) {
+    setAddress(value)
+    setBlockId(confidentBlockForAddress(value) ?? '')
+  }
 
   useEffect(() => {
     if (!session || !supabase) return
@@ -87,8 +93,7 @@ export default function Account() {
         <div className="panel-title"><Cloud /><div><h2>Cloud sync is on</h2><p>Your household plan follows you to any signed-in device.</p></div></div>
         <form onSubmit={saveProfile}>
           <label><span>Household display name <small>private</small></span><input value={householdName} maxLength={80} onChange={(event) => setHouseholdName(event.target.value)} placeholder="The Rivera household" /></label>
-          <label><span>Home address <small>required to connect your private map household</small></span><input required value={address} maxLength={180} onChange={(event) => setAddress(event.target.value)} placeholder="496 N 500 E" autoComplete="street-address" /></label>
-          <label><span>Ward block <small>required for directory access and anonymous block totals</small></span><select required value={blockId} onChange={(event) => setBlockId(event.target.value)}><option value="">Select your block</option>{'ABCDEFGHIJKLMNOPQR'.split('').map((block) => <option key={block} value={block}>Block {block}</option>)}</select></label>
+          <AddressBlockFields address={address} blockId={blockId} onAddressChange={changeAddress} onBlockChange={setBlockId} profile />
           {message && <p className="account-message">{message}</p>}
           <div className="button-row"><button className="button primary" disabled={busy}>Save profile</button><button type="button" className="button secondary" onClick={() => supabase?.auth.signOut()}><LogOut size={16} /> Sign out</button></div>
         </form>
@@ -110,7 +115,7 @@ export default function Account() {
       <h2>{mode === 'signup' ? 'Create family account' : mode === 'forgot' ? 'Password help' : 'Family sign in'}</h2>
       {mode === 'signup' && <div className="no-confirm-note"><Check /><span><b>No confirmation step.</b> Create your account and begin planning immediately—no inbox visit required.</span></div>}
       {mode === 'signup' && <label><span>Household name <small>optional</small></span><input name="household_name" maxLength={80} autoComplete="organization" placeholder="The Rivera household" /></label>}
-      {mode === 'signup' && <><label><span>Home address</span><input required name="address" maxLength={180} autoComplete="street-address" placeholder="496 N 500 E" /></label><label><span>Ward block</span><select required name="block_id" defaultValue=""><option value="" disabled>Select your block</option>{'ABCDEFGHIJKLMNOPQR'.split('').map((block) => <option key={block} value={block}>Block {block}</option>)}</select></label></>}
+      {mode === 'signup' && <AddressBlockFields address={address} blockId={blockId} onAddressChange={changeAddress} onBlockChange={setBlockId} />}
       <label><span>Email address</span><div className="input-with-icon"><Mail /><input required name="email" type="email" autoComplete="email" /></div></label>
       {mode !== 'forgot' && <label><span>Password</span><div className="input-with-icon"><LockKeyhole /><input required name="password" type={showPassword ? 'text' : 'password'} minLength={8} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff /> : <Eye />}</button></div>{mode === 'signup' && <small>At least 8 characters; a password manager is best.</small>}</label>}
       {message && <p className="account-message">{message}</p>}
@@ -118,6 +123,26 @@ export default function Account() {
       <div className="auth-switch">{mode !== 'signin' && <button type="button" onClick={() => { setMode('signin'); setMessage('') }}>Already have an account? Sign in</button>}{mode === 'signin' && <><button type="button" onClick={() => { setMode('signup'); setMessage('') }}>Create a family account</button><button type="button" onClick={() => { setMode('forgot'); setMessage('') }}>Forgot password?</button></>}</div>
     </form>
   </div>
+}
+
+function AddressBlockFields({ address, blockId, onAddressChange, onBlockChange, profile = false }: {
+  address: string
+  blockId: string
+  onAddressChange: (value: string) => void
+  onBlockChange: (value: string) => void
+  profile?: boolean
+}) {
+  const suggestions = useMemo(() => suggestBlocksForAddress(address), [address])
+  const confirmed = suggestions.find((suggestion) => suggestion.confidence === 'confirmed')
+  const showDetection = address.trim().length >= 2
+
+  return <>
+    <label><span>Home address {profile && <small>required to connect your private map household</small>}</span><input required name="address" value={address} maxLength={180} onChange={(event) => onAddressChange(event.target.value)} placeholder="469 N 900 E" autoComplete="street-address" aria-describedby={showDetection ? 'block-detection-status' : undefined} /></label>
+    {showDetection && <div id="block-detection-status" className={confirmed ? 'block-detection confirmed' : 'block-detection'} aria-live="polite">
+      {confirmed ? <><MapPin /><div><span>Address matched</span><b>Block {confirmed.blockId}</b><p>{confirmed.detail} You can correct it below if needed.</p></div><Check className="block-match-check" /></> : suggestions.length ? <><Search /><div><span>Scanning the ward map</span><b>Possible {suggestions.length === 1 ? 'block' : 'blocks'}</b><p>Keep entering the full grid address, or choose the right suggestion.</p><div className="block-suggestion-list">{suggestions.map((suggestion) => <button type="button" className={blockId === suggestion.blockId ? 'selected' : ''} key={suggestion.blockId} onClick={() => onBlockChange(suggestion.blockId)}>Block {suggestion.blockId}</button>)}</div></div></> : <><Search /><div><span>Scanning the ward map</span><b>Keep typing the full address</b><p>Include both parts, such as “469 N 900 E,” so the map can narrow it to one block.</p></div></>}
+    </div>}
+    <label><span>Ward block <small>{profile ? 'required for directory access and anonymous block totals' : 'suggested automatically from your address'}</small></span><select required name="block_id" value={blockId} onChange={(event) => onBlockChange(event.target.value)}><option value="">Select your block</option>{'ABCDEFGHIJKLMNOPQR'.split('').map((block) => <option key={block} value={block}>Block {block}</option>)}</select></label>
+  </>
 }
 
 function PrivacyPromise() {
