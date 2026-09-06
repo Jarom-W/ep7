@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { BookOpen, Bug, CircleHelp, ClipboardList, FileText, Home, Map, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
+import WalkieTalkieIcon from './WalkieTalkieIcon'
 
 const nav = [
   { to: '/', label: 'Start here', icon: Home },
@@ -37,7 +38,8 @@ export default function Layout() {
         </nav>
       </header>
       <main id="main"><Outlet /></main>
-      <Link className="feedback-fab" to="/feedback"><Bug size={17} /> <span>Report a bug or idea</span></Link>
+      <Link className="feedback-fab radio-fab" to="/radio" aria-label="Stake Radio Communications" title="Stake Radio Communications"><WalkieTalkieIcon width={19} height={19} /> <span>Stake radio communications</span></Link>
+      <Link className="feedback-fab" to="/feedback" aria-label="Report a bug or idea"><Bug size={17} /> <span>Report a bug or idea</span></Link>
       <footer>
         <div>
           <strong>Ready Together</strong>
@@ -47,6 +49,7 @@ export default function Layout() {
           <Link to="/library">Emergency plan</Link>
           <Link to="/block-map">Find your block</Link>
           <Link to="/help"><CircleHelp size={14} /> How to use the site</Link>
+          <Link to="/radio"><WalkieTalkieIcon width={16} height={16} /> Stake radio</Link>
           <Link to="/feedback"><Bug size={14} /> Report a bug or idea</Link>
           <Link to="/specialist">Specialist sign in</Link>
         </div>

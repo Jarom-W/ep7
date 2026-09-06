@@ -4,15 +4,19 @@ import type { Session } from '@supabase/supabase-js'
 import { isSupabaseConfigured, publicMediaUrl, supabase } from '../lib/supabase'
 import type { BlockCaptain, BlockHousehold, DocumentRecord, FamilyProfile, SiteMediaRecord } from '../types'
 import { blockDetails } from '../data/blockDetails'
+import { useSearchParams } from 'react-router-dom'
+import RadioAdmin from '../components/RadioAdmin'
+import WalkieTalkieIcon from '../components/WalkieTalkieIcon'
 
 type FeedbackRecord = { id: string; type: string; name: string | null; email: string | null; subject: string; message: string; status: string; created_at: string }
 type MinisteringGrant = { id: string; grantee_user_id: string; target_household_id: string; can_write: boolean }
 
 export default function Specialist() {
+  const [searchParams] = useSearchParams()
   const [session, setSession] = useState<Session | null>(null)
   const [authorized, setAuthorized] = useState(false)
   const [checking, setChecking] = useState(true)
-  const [tab, setTab] = useState<'documents' | 'map' | 'access' | 'feedback'>('documents')
+  const [tab, setTab] = useState<'documents' | 'map' | 'access' | 'feedback' | 'radio'>(() => searchParams.get('tab') === 'radio' ? 'radio' : 'documents')
   const [documents, setDocuments] = useState<DocumentRecord[]>([])
   const [helpVideo, setHelpVideo] = useState<SiteMediaRecord | null>(null)
   const [captains, setCaptains] = useState<BlockCaptain[]>([])
@@ -178,8 +182,9 @@ export default function Specialist() {
 
   return <div className="page-width interior-page admin-page">
     <div className="admin-header"><div><span className="eyebrow">Authenticated workspace</span><h1>Specialist dashboard</h1><p>Manage the public information neighbors see.</p></div><button className="button secondary" onClick={() => supabase?.auth.signOut()}><LogOut size={16} /> Sign out</button></div>
-    <div className="admin-tabs"><button className={tab === 'documents' ? 'active' : ''} onClick={() => setTab('documents')}><Newspaper /> Documents</button><button className={tab === 'map' ? 'active' : ''} onClick={() => setTab('map')}><MapPin /> Block map</button><button className={tab === 'access' ? 'active' : ''} onClick={() => setTab('access')}><KeyRound /> Household access</button><button className={tab === 'feedback' ? 'active' : ''} onClick={() => setTab('feedback')}><Bug /> Feedback {feedback.filter((item) => item.status === 'new').length > 0 && <i>{feedback.filter((item) => item.status === 'new').length}</i>}</button></div>
+    <div className="admin-tabs"><button className={tab === 'documents' ? 'active' : ''} onClick={() => setTab('documents')}><Newspaper /> Documents</button><button className={tab === 'map' ? 'active' : ''} onClick={() => setTab('map')}><MapPin /> Block map</button><button className={tab === 'access' ? 'active' : ''} onClick={() => setTab('access')}><KeyRound /> Household access</button><button className={tab === 'radio' ? 'active' : ''} onClick={() => setTab('radio')}><WalkieTalkieIcon /> Stake radio</button><button className={tab === 'feedback' ? 'active' : ''} onClick={() => setTab('feedback')}><Bug /> Feedback {feedback.filter((item) => item.status === 'new').length > 0 && <i>{feedback.filter((item) => item.status === 'new').length}</i>}</button></div>
     {message && <div className="admin-message">{message}<button onClick={() => setMessage('')}>×</button></div>}
+    {tab === 'radio' && <RadioAdmin />}
     {tab === 'documents' && <div className="admin-grid">
       <div className="admin-stack">
         <form className="admin-form" onSubmit={uploadDocument}><h2><FileUp /> Publish a PDF</h2><label><span>Document type</span><select name="kind"><option value="newsletter">Monthly newsletter</option><option value="plan">Standing emergency plan</option></select></label><label><span>Title</span><input required name="title" placeholder="August 2026 Preparedness Newsletter" /></label><label><span>Short description</span><textarea name="description" rows={3} /></label><label><span>Publication date</span><input name="published_at" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label className="file-field"><FileUp /><span><b>Choose PDF</b><small>PDF files only</small></span><input required name="file" type="file" accept="application/pdf" /></label><button className="button primary">Upload & publish</button></form>

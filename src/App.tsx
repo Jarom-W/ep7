@@ -11,6 +11,7 @@ const Specialist = lazy(() => import('./pages/Specialist'))
 const Feedback = lazy(() => import('./pages/Feedback'))
 const Account = lazy(() => import('./pages/Account'))
 const Help = lazy(() => import('./pages/Help'))
+const RadioCommunications = lazy(() => import('./pages/RadioCommunications'))
 
 export default function App() {
   return <Suspense fallback={<div className="full-loader">Loading…</div>}><Routes>
@@ -25,6 +26,7 @@ export default function App() {
       <Route path="feedback" element={<Feedback />} />
       <Route path="account" element={<Account />} />
       <Route path="help" element={<Help />} />
+      <Route path="radio" element={<RadioCommunications />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   </Routes></Suspense>

@@ -91,3 +91,29 @@ export type HouseholdPrivateDetail = {
   special_circumstances: string
   updated_at?: string
 }
+
+export type RadioEvent = {
+  id: string
+  title: string
+  description: string
+  start_date: string
+  start_time: string
+  end_time: string | null
+  recurrence: 'once' | 'weekly' | 'monthly'
+  weekday: number | null
+  month_weeks: number[]
+  repeat_until: string | null
+  skipped_dates: string[]
+  location: string
+  frequency: string
+  status: 'scheduled' | 'tentative' | 'cancelled'
+}
+
+export type RadioInformation = {
+  id: string
+  title: string
+  body: string
+  link_url: string
+  link_label: string
+  sort_order: number
+}

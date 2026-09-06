@@ -90,6 +90,9 @@ In Cloudflare, enable Always Use HTTPS, Bot Fight Mode, and a conservative rate-
 
 ## Content and privacy notes
 
+- The green walkie-talkie button opens `/radio`, a public Stake Radio Communications calendar and resource page. Specialists manage its events and information under **Specialist → Stake radio** (or `/specialist?tab=radio`).
+- Radio events use Mountain Time, with one-time, weekly, and selected-week-of-month recurrence. A specialist can end a series, skip individual dates, or mark events proposed/cancelled. Editing a recurring event changes the entire series; skip a date and add a one-time replacement to change only one meeting.
+- The initial radio schedule and resources come from Allen Carter's August 23, 2026 email. The September 24 drill remains proposed, and the Springville job notice is labeled historical rather than treated as a verified current opening.
 - Newsletter and emergency-plan uploads accept PDFs up to 20 MB.
 - The signed-in map is fully code-drawn SVG from `src/data/neighborhood.ts` and `src/data/blockDetails.ts`; the reference photos are never displayed in the application.
 - Captains and households default to private. An admin must explicitly mark each record public after obtaining permission to publish the name/address/phone.
@@ -101,6 +104,8 @@ In Cloudflare, enable Always Use HTTPS, Bot Fight Mode, and a conservative rate-
 ## Verification
 
 ```bash
+npm run lint
+npm run test:radio
 npm run build
 docker compose config
 ```
