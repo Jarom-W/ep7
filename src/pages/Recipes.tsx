@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Clock3, Heart, Search, Users } from 'lucide-react'
+import { Check, CheckCircle2, Clock3, Heart, Search, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { ingredients, recipes } from '../data/recipes'
 import { useLocalStorage } from '../lib/useLocalStorage'
 import { recipeCapacity, recipeProgress } from '../lib/planner'
@@ -19,6 +20,8 @@ export default function Recipes() {
   const [planExists, setPlanExists] = useState(false)
   const [filter, setFilter] = useState('All')
   const [query, setQuery] = useState('')
+  const [expandedIngredientRecipes, setExpandedIngredientRecipes] = useState<string[]>([])
+  const [wishlistNotice, setWishlistNotice] = useState('')
   const allIngredients = useMemo(() => [...ingredients, ...customSupplies], [customSupplies])
   const allRecipes = useMemo(() => [...recipes, ...customRecipes], [customRecipes])
   const [selectedId, setSelectedId] = useState(recipes[0]!.id)
@@ -55,11 +58,24 @@ export default function Recipes() {
     return () => window.clearTimeout(timer)
   }, [cloudReady, planExists, session, wishlist])
 
-  function addToWishlist(recipeId: string) {
+  useEffect(() => {
+    if (!wishlistNotice) return
+    const timer = window.setTimeout(() => setWishlistNotice(''), 5000)
+    return () => window.clearTimeout(timer)
+  }, [wishlistNotice])
+
+  function addToWishlist(recipeId: string, batches: number) {
+    const recipe = allRecipes.find((item) => item.id === recipeId)
+    const plannedBatches = (wishlist.find((item) => item.recipeId === recipeId)?.batches ?? 0) + batches
     setWishlist((current) => {
       const match = current.find((item) => item.recipeId === recipeId)
-      return match ? current.map((item) => item.recipeId === recipeId ? { ...item, batches: item.batches + 1 } : item) : [...current, { recipeId, batches: 1 }]
+      return match ? current.map((item) => item.recipeId === recipeId ? { ...item, batches: item.batches + batches } : item) : [...current, { recipeId, batches }]
     })
+    setWishlistNotice(`${batches} ${batches === 1 ? 'batch' : 'batches'} of ${recipe?.name ?? 'the meal'} added. ${plannedBatches} now planned.`)
+  }
+
+  function toggleIngredientPreview(recipeId: string) {
+    setExpandedIngredientRecipes((current) => current.includes(recipeId) ? current.filter((id) => id !== recipeId) : [...current, recipeId])
   }
 
   return <div className="page-width interior-page recipe-page">
@@ -69,25 +85,28 @@ export default function Recipes() {
       <div className="recipe-list">{visible.map((recipe) => {
         const progress = recipeProgress(recipe, inventory)
         const ingredientNames = recipe.ingredients.map((item) => allIngredients.find((ingredient) => ingredient.id === item.ingredientId)?.name).filter(Boolean)
-        return <button key={recipe.id} className={selected.id === recipe.id ? 'recipe-card selected' : 'recipe-card'} onClick={() => setSelectedId(recipe.id)}>
+        const ingredientsExpanded = expandedIngredientRecipes.includes(recipe.id)
+        return <article key={recipe.id} className={selected.id === recipe.id ? 'recipe-card selected' : 'recipe-card'}>
+          <button type="button" className="recipe-card-open" aria-label={`View ${recipe.name} recipe details`} onClick={() => setSelectedId(recipe.id)} />
           <div className="recipe-card-top"><span>{recipe.tags[0]}</span>{recipeCapacity(recipe, inventory) > 0 && <i><Check size={12} /> Ready</i>}</div>
           <h2>{recipe.name}</h2>{recipe.description && <p>{recipe.description}</p>}
-          <div className="recipe-ingredient-preview"><span>Ingredients</span><b>{ingredientNames.slice(0, 3).join(' · ')}{ingredientNames.length > 3 ? ` + ${ingredientNames.length - 3} more` : ''}</b></div>
+          <div className="recipe-ingredient-preview"><span>Ingredients</span><b>{ingredientNames.slice(0, ingredientsExpanded ? ingredientNames.length : 3).join(' · ')}{ingredientNames.length > 3 && <>{' '}<button type="button" className="ingredient-more" aria-expanded={ingredientsExpanded} onClick={() => toggleIngredientPreview(recipe.id)}>{ingredientsExpanded ? 'Show fewer' : `+ ${ingredientNames.length - 3} more`}</button></>}</b></div>
           <div className="recipe-meta"><span><Clock3 /> {recipe.minutes} min</span><span><Users /> {recipe.servings}</span><b>{progress}% stocked</b></div>
           <div className="progress"><i style={{ width: `${progress}%` }} /></div>
-        </button>
+        </article>
       })}</div>
       <aside className="recipe-detail">
         <span className="eyebrow">Recipe details</span><h2>{selected.name}</h2>{selected.description && <p>{selected.description}</p>}
         <div className="tag-row">{selected.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
-        <div className="batch-target"><label><span>Plan batches</span><input type="number" min="1" max="100" value={targetBatches} onChange={(event) => setTargetBatches(Math.max(1, Number(event.target.value)))} /></label><strong>{targetBatches * selected.servings}<small> total servings</small></strong></div>
+        <div className="batch-target"><label><span>Plan batches</span><input type="number" min="1" max="100" value={targetBatches} onChange={(event) => setTargetBatches(Math.min(100, Math.max(1, Number(event.target.value) || 1)))} /></label><strong>{targetBatches * selected.servings}<small> total servings</small></strong></div>
         <h3>Ingredients for {targetBatches} {targetBatches === 1 ? 'batch' : 'batches'}</h3>
         <ul className="ingredient-list">{selected.ingredients.map((item) => {
           const ingredient = allIngredients.find((entry) => entry.id === item.ingredientId)
           const owned = inventory.find((entry) => entry.ingredientId === item.ingredientId)?.quantity ?? 0
           const required = item.amount * targetBatches
           return <li key={item.ingredientId}><span>{ingredient?.name ?? 'Unavailable ingredient'}<small>{owned >= required ? 'Enough in your pantry' : `${Math.max(0, required - owned).toFixed(1)} more needed`}</small></span><b>{Number(required.toFixed(2))} {ingredient?.unit ?? 'unit'}</b></li>
-        })}</ul><button className="button wishlist-button" onClick={() => addToWishlist(selected.id)}><Heart /> Add {selected.name} to wishlist{wishlist.find((item) => item.recipeId === selected.id) ? ` · ${wishlist.find((item) => item.recipeId === selected.id)!.batches} planned` : ''}</button>
+        })}</ul><button type="button" className="button wishlist-button" disabled={Boolean(session && !cloudReady)} onClick={() => addToWishlist(selected.id, targetBatches)}><Heart fill={wishlist.some((item) => item.recipeId === selected.id) ? 'currentColor' : 'none'} /> {session && !cloudReady ? 'Loading your wishlist…' : `Add ${targetBatches} ${targetBatches === 1 ? 'batch' : 'batches'} to my wishlist${wishlist.find((item) => item.recipeId === selected.id) ? ` · ${wishlist.find((item) => item.recipeId === selected.id)!.batches} planned` : ''}`}</button>
+        <div className="recipe-wishlist-notice" aria-live="polite" aria-atomic="true">{wishlistNotice && <><CheckCircle2 /><span>{wishlistNotice}</span><Link to="/planner#meal-wishlist">View wishlist</Link></>}</div>
         <h3>Directions</h3><ol>{selected.instructions.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>
         <p className="recipe-safety"><b>Safety note:</b> Use safe water, observe food allergy needs, and refrigerate leftovers within two hours when refrigeration is available.</p>
       </aside>

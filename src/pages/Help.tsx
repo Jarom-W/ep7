@@ -1,7 +1,9 @@
-import { useEffect } from 'react'
-import { ArrowRight, BookOpen, Bug, CheckCircle2, CircleHelp, Cloud, FileText, Heart, ListChecks, LockKeyhole, Map, MousePointer2, PackagePlus, ShieldCheck, Sparkles, UserPlus, Utensils } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowRight, BookOpen, Bug, CircleHelp, Cloud, FileText, Heart, ListChecks, LockKeyhole, Map, PlayCircle, ShieldCheck, Sparkles, Utensils } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
+import { publicMediaUrl, supabase } from '../lib/supabase'
+import type { SiteMediaRecord } from '../types'
 
 const chapters = [
   { id: 'quick-start', label: 'Quick start' },
@@ -14,6 +16,12 @@ const chapters = [
 
 export default function Help() {
   const { session } = useAuth()
+  const [helpVideo, setHelpVideo] = useState<SiteMediaRecord | null>(null)
+
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('site_media').select('*').eq('slot', 'help-overview').maybeSingle().then(({ data }) => setHelpVideo((data as SiteMediaRecord | null) ?? null))
+  }, [])
 
   useEffect(() => {
     const elements = document.querySelectorAll<HTMLElement>('[data-help-reveal]')
@@ -26,15 +34,10 @@ export default function Help() {
     <section className="help-hero">
       <div className="page-width help-hero-grid">
         <div className="help-hero-copy" data-help-reveal><span className="eyebrow">Ready Together field guide</span><h1>From first click to a family-ready plan.</h1><p>This guide explains what every part of the site does, what information is private, and the simplest path from an empty pantry list to an actionable preparedness plan.</p><div className="button-row"><Link className="button primary" to={session ? '/planner' : '/account?mode=signup'}>{session ? 'Continue my plan' : 'Start with an account'} <ArrowRight /></Link><a className="button secondary" href="#quick-start">Read the guide</a></div></div>
-        <div className="help-journey" aria-label="Animated overview of the four planning stages" data-help-reveal>
-          <div className="journey-line"><i /></div>
-          <div className="journey-step active"><UserPlus /><span>Household</span><b>1</b></div>
-          <div className="journey-step"><PackagePlus /><span>Pantry</span><b>2</b></div>
-          <div className="journey-step"><Utensils /><span>Meals</span><b>3</b></div>
-          <div className="journey-step"><Sparkles /><span>Plan</span><b>4</b></div>
-          <div className="journey-cursor"><MousePointer2 /></div>
-          <p><CheckCircle2 /> Progress saves as you go</p>
-        </div>
+        <div className="help-video-card" data-help-reveal>{helpVideo ? <>
+          <video controls playsInline preload="metadata"><source src={publicMediaUrl(helpVideo.file_path)} type={helpVideo.mime_type} />Your browser cannot play this video.</video>
+          <div><span className="eyebrow">Video walkthrough</span><h2>{helpVideo.title}</h2>{helpVideo.description && <p>{helpVideo.description}</p>}</div>
+        </> : <div className="help-video-placeholder"><PlayCircle /><span className="eyebrow">Video walkthrough</span><h2>How to use Ready Together</h2><p>The specialist’s guided site tour will appear here as soon as it is published.</p></div>}</div>
       </div>
     </section>
 

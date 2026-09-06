@@ -5,16 +5,27 @@ import { supabase } from '../lib/supabase'
 export default function Feedback() {
   const [type, setType] = useState<'bug' | 'feature'>('bug')
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setStatus('sending')
+    setErrorMessage('')
     const form = new FormData(event.currentTarget)
     const payload = { type, name: form.get('name'), email: form.get('email'), subject: form.get('subject'), message: form.get('message'), website: form.get('website') }
-    if (!supabase) { setStatus('error'); return }
+    if (!supabase) {
+      setErrorMessage('Feedback is temporarily unavailable because the site connection is not configured.')
+      setStatus('error')
+      return
+    }
     const { error } = await supabase.functions.invoke('submit-feedback', { body: payload })
-    setStatus(error ? 'error' : 'sent')
-    if (!error) event.currentTarget.reset()
+    if (error) {
+      setErrorMessage('We could not save your feedback. Please check your connection and try again.')
+      setStatus('error')
+      return
+    }
+    setStatus('sent')
+    event.currentTarget.reset()
   }
 
   return <div className="page-width interior-page feedback-page">
@@ -28,7 +39,7 @@ export default function Feedback() {
         <label><span>Short summary</span><input name="subject" required maxLength={120} placeholder={type === 'bug' ? 'Example: Water total does not update' : 'Example: Add a printable shopping list'} /></label>
         <label><span>Details</span><textarea name="message" required minLength={10} maxLength={4000} rows={7} placeholder="What happened, what did you expect, or how would your idea help?" /></label>
         <label className="honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
-        {status === 'error' && <p className="form-error">The form is not connected yet or could not send. Please try again later, or email jaromwardwell@gmail.com.</p>}
+        {status === 'error' && <p className="form-error" role="alert">{errorMessage} If it keeps happening, email jaromwardwell@gmail.com.</p>}
         <button className="button primary" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : <>Send feedback <Send size={17} /></>}</button>
       </form>}
     </div>

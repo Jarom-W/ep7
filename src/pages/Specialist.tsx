@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { Bug, FileUp, KeyRound, Link2, Loader2, LogIn, LogOut, MapPin, Newspaper, Pencil, Plus, ShieldCheck, Trash2, Users } from 'lucide-react'
+import { Bug, FileUp, KeyRound, Link2, Loader2, LogIn, LogOut, MapPin, Newspaper, Pencil, PlayCircle, Plus, ShieldCheck, Trash2, Users, Video } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
-import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import type { BlockCaptain, BlockHousehold, DocumentRecord, FamilyProfile } from '../types'
+import { isSupabaseConfigured, publicMediaUrl, supabase } from '../lib/supabase'
+import type { BlockCaptain, BlockHousehold, DocumentRecord, FamilyProfile, SiteMediaRecord } from '../types'
 import { blockDetails } from '../data/blockDetails'
 
 type FeedbackRecord = { id: string; type: string; name: string | null; email: string | null; subject: string; message: string; status: string; created_at: string }
@@ -14,6 +14,7 @@ export default function Specialist() {
   const [checking, setChecking] = useState(true)
   const [tab, setTab] = useState<'documents' | 'map' | 'access' | 'feedback'>('documents')
   const [documents, setDocuments] = useState<DocumentRecord[]>([])
+  const [helpVideo, setHelpVideo] = useState<SiteMediaRecord | null>(null)
   const [captains, setCaptains] = useState<BlockCaptain[]>([])
   const [households, setHouseholds] = useState<BlockHousehold[]>([])
   const [feedback, setFeedback] = useState<FeedbackRecord[]>([])
@@ -36,8 +37,9 @@ export default function Specialist() {
 
   async function loadAdminData() {
     if (!supabase) return
-    const [docs, captainRows, householdRows, feedbackRows, profileRows, grantRows] = await Promise.all([
+    const [docs, mediaRows, captainRows, householdRows, feedbackRows, profileRows, grantRows] = await Promise.all([
       supabase.from('documents').select('*').order('published_at', { ascending: false }),
+      supabase.from('site_media').select('*').eq('slot', 'help-overview').maybeSingle(),
       supabase.from('block_captains').select('*').order('block_id'),
       supabase.from('block_households').select('*').order('block_id'),
       supabase.from('feedback').select('*').order('created_at', { ascending: false }),
@@ -45,6 +47,7 @@ export default function Specialist() {
       supabase.from('ministering_access').select('*').order('created_at', { ascending: false }),
     ])
     setDocuments((docs.data as DocumentRecord[]) ?? [])
+    setHelpVideo((mediaRows.data as SiteMediaRecord | null) ?? null)
     setCaptains((captainRows.data as BlockCaptain[]) ?? [])
     setHouseholds((householdRows.data as BlockHousehold[]) ?? [])
     setFeedback((feedbackRows.data as FeedbackRecord[]) ?? [])
@@ -76,6 +79,37 @@ export default function Specialist() {
     if (kind === 'plan') await supabase.from('documents').delete().eq('kind', 'plan')
     const { error } = await supabase.from('documents').insert({ title: String(form.get('title')), description: String(form.get('description') || ''), kind, file_path: path, published_at: String(form.get('published_at')) || new Date().toISOString() })
     setMessage(error?.message ?? 'Published successfully.')
+    if (!error) { event.currentTarget.reset(); await loadAdminData() }
+  }
+
+  async function uploadHelpVideo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!supabase || !session) return
+    setMessage('Uploading guide video…')
+    const form = new FormData(event.currentTarget)
+    const file = form.get('file') as File
+    const supportedTypes = ['video/mp4', 'video/webm', 'video/ogg'] as const
+    if (!file || !supportedTypes.includes(file.type as typeof supportedTypes[number])) {
+      setMessage('Please choose an MP4, WebM, or Ogg video.')
+      return
+    }
+    if (file.size > 262144000) {
+      setMessage('The guide video must be 250 MB or smaller.')
+      return
+    }
+    const path = `help/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`
+    const { error: uploadError } = await supabase.storage.from('preparedness-media').upload(path, file, { contentType: file.type, cacheControl: '3600' })
+    if (uploadError) { setMessage(uploadError.message); return }
+    const { error } = await supabase.from('site_media').upsert({
+      slot: 'help-overview',
+      title: String(form.get('title')).trim(),
+      description: String(form.get('description') || '').trim() || null,
+      file_path: path,
+      mime_type: file.type,
+      updated_by: session.user.id,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'slot' })
+    setMessage(error?.message ?? 'How-to video published successfully.')
     if (!error) { event.currentTarget.reset(); await loadAdminData() }
   }
 
@@ -147,8 +181,13 @@ export default function Specialist() {
     <div className="admin-tabs"><button className={tab === 'documents' ? 'active' : ''} onClick={() => setTab('documents')}><Newspaper /> Documents</button><button className={tab === 'map' ? 'active' : ''} onClick={() => setTab('map')}><MapPin /> Block map</button><button className={tab === 'access' ? 'active' : ''} onClick={() => setTab('access')}><KeyRound /> Household access</button><button className={tab === 'feedback' ? 'active' : ''} onClick={() => setTab('feedback')}><Bug /> Feedback {feedback.filter((item) => item.status === 'new').length > 0 && <i>{feedback.filter((item) => item.status === 'new').length}</i>}</button></div>
     {message && <div className="admin-message">{message}<button onClick={() => setMessage('')}>×</button></div>}
     {tab === 'documents' && <div className="admin-grid">
-      <form className="admin-form" onSubmit={uploadDocument}><h2><FileUp /> Publish a PDF</h2><label><span>Document type</span><select name="kind"><option value="newsletter">Monthly newsletter</option><option value="plan">Standing emergency plan</option></select></label><label><span>Title</span><input required name="title" placeholder="August 2026 Preparedness Newsletter" /></label><label><span>Short description</span><textarea name="description" rows={3} /></label><label><span>Publication date</span><input name="published_at" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label className="file-field"><FileUp /><span><b>Choose PDF</b><small>PDF files only</small></span><input required name="file" type="file" accept="application/pdf" /></label><button className="button primary">Upload & publish</button></form>
-      <div className="admin-list"><h2>Published documents</h2>{documents.map((document) => <div className="admin-list-row" key={document.id}><Newspaper /><span><b>{document.title}</b><small>{document.kind} · {new Date(document.published_at).toLocaleDateString()}</small></span><button onClick={() => remove('documents', document.id)} aria-label="Delete"><Trash2 /></button></div>)}</div>
+      <div className="admin-stack">
+        <form className="admin-form" onSubmit={uploadDocument}><h2><FileUp /> Publish a PDF</h2><label><span>Document type</span><select name="kind"><option value="newsletter">Monthly newsletter</option><option value="plan">Standing emergency plan</option></select></label><label><span>Title</span><input required name="title" placeholder="August 2026 Preparedness Newsletter" /></label><label><span>Short description</span><textarea name="description" rows={3} /></label><label><span>Publication date</span><input name="published_at" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label className="file-field"><FileUp /><span><b>Choose PDF</b><small>PDF files only</small></span><input required name="file" type="file" accept="application/pdf" /></label><button className="button primary">Upload & publish</button></form>
+        <form className="admin-form" onSubmit={uploadHelpVideo}><h2><Video /> Publish the Help video</h2><p className="admin-help">This video appears at the top of the Help page. Uploading again replaces the video shown on the site.</p><label><span>Video title</span><input required name="title" maxLength={160} defaultValue="How to use Ready Together" /></label><label><span>Short description</span><textarea name="description" maxLength={500} rows={3} placeholder="A quick tour of the household plan, pantry, meals, and ward tools." /></label><label className="file-field"><Video /><span><b>Choose video</b><small>MP4, WebM, or Ogg · up to 250 MB</small></span><input required name="file" type="file" accept="video/mp4,video/webm,video/ogg" /></label><button className="button primary">Upload & publish video</button></form>
+      </div>
+      <div className="admin-stack"><div className="admin-list"><h2>Published documents</h2>{documents.map((document) => <div className="admin-list-row" key={document.id}><Newspaper /><span><b>{document.title}</b><small>{document.kind} · {new Date(document.published_at).toLocaleDateString()}</small></span><button onClick={() => remove('documents', document.id)} aria-label="Delete"><Trash2 /></button></div>)}</div>
+        <div className="admin-list help-video-admin"><h2><PlayCircle /> Current Help video</h2>{helpVideo ? <><video controls preload="metadata" src={publicMediaUrl(helpVideo.file_path)} /><div className="admin-list-row"><Video /><span><b>{helpVideo.title}</b><small>Updated {new Date(helpVideo.updated_at).toLocaleString()}</small></span></div></> : <div className="empty-state">No Help video has been published yet.</div>}</div>
+      </div>
     </div>}
     {tab === 'map' && <div className="admin-grid">
       <form className="admin-form" onSubmit={addMapRecord}><h2><Plus /> Add map record</h2><label><span>Record type</span><select name="record_type"><option value="captain">Block captain</option><option value="household">Household</option></select></label><label><span>Block</span><select name="block_id">{'ABCDEFGHIJKLMNOPQR'.split('').map((letter) => <option key={letter}>{letter}</option>)}</select></label><label><span>Name or family label</span><input required name="name" /></label><label><span>Address</span><input name="address" /></label><label><span>Phone (captains only)</span><input name="phone" type="tel" /></label><label><span>Map structure ID</span><input name="building_id" list="map-building-ids" placeholder="Example: G-4" pattern="[A-Ra-r]-([1-9]|1[0-9]|2[0-9]|30)" /><datalist id="map-building-ids">{Object.values(blockDetails).flatMap((detail) => detail.buildings).map((building) => <option key={building.id} value={building.id}>{building.addresses.map((item) => item.label).join(', ')}</option>)}</datalist><small>Links a captain or family to the exact code-drawn structure.</small></label><label className="check-label"><input name="is_public" type="checkbox" defaultChecked /><span><b>Show in the signed-in directory</b><small>The map itself is unavailable to signed-out visitors.</small></span></label><button className="button primary">Save map record</button></form>

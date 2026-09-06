@@ -30,23 +30,35 @@ Deno.serve(async (request) => {
     const { error: insertError } = await admin.from('feedback').insert({ type, name, email, subject, message })
     if (insertError) throw insertError
 
+    // Saving feedback is the important operation. Email is a best-effort
+    // notification, so a missing/rejected mail configuration must not tell the
+    // visitor that their already-saved message failed.
+    let notificationSent = false
     const resendKey = Deno.env.get('RESEND_API_KEY')
     const from = Deno.env.get('FEEDBACK_FROM_EMAIL')
-    if (!resendKey || !from) throw new Error('Email delivery is not configured')
+    if (resendKey && from) {
+      try {
+        const mailResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from,
+            to: ['jaromwardwell@gmail.com'],
+            reply_to: email ?? undefined,
+            subject: `[Ward site ${type === 'bug' ? 'Bug' : 'Idea'}] ${subject}`,
+            text: `${type.toUpperCase()} SUBMISSION\n\nFrom: ${name ?? 'Anonymous'}${email ? ` <${email}>` : ''}\n\n${message}`,
+          }),
+        })
+        notificationSent = mailResponse.ok
+        if (!mailResponse.ok) console.error(`Feedback email provider returned ${mailResponse.status}`)
+      } catch (emailError) {
+        console.error('Feedback was saved, but its email notification failed.', emailError)
+      }
+    } else {
+      console.warn('Feedback was saved without email because email delivery is not configured.')
+    }
 
-    const mailResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from,
-        to: ['jaromwardwell@gmail.com'],
-        reply_to: email ?? undefined,
-        subject: `[Ward site ${type === 'bug' ? 'Bug' : 'Idea'}] ${subject}`,
-        text: `${type.toUpperCase()} SUBMISSION\n\nFrom: ${name ?? 'Anonymous'}${email ? ` <${email}>` : ''}\n\n${message}`,
-      }),
-    })
-    if (!mailResponse.ok) throw new Error(`Email provider returned ${mailResponse.status}`)
-    return json({ ok: true })
+    return json({ ok: true, notificationSent })
   } catch (error) {
     console.error(error)
     return json({ error: 'Could not submit feedback.' }, 500)

@@ -15,3 +15,8 @@ export function publicDocumentUrl(path: string) {
   if (!supabase) return path
   return supabase.storage.from('preparedness-documents').getPublicUrl(path).data.publicUrl
 }
+
+export function publicMediaUrl(path: string) {
+  if (!supabase) return path
+  return supabase.storage.from('preparedness-media').getPublicUrl(path).data.publicUrl
+}

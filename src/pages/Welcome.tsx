@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { ArrowRight, BookOpen, Check, CircleHelp, ClipboardList, Heart, LockKeyhole, Map, PackagePlus, ShieldCheck, Sparkles, UserPlus, Users, Utensils } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, CirclePlay, ClipboardList, Heart, LockKeyhole, Map, PackagePlus, ShieldCheck, Sparkles, UserPlus, Users, Utensils } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 
@@ -15,7 +15,7 @@ export default function Welcome() {
 
   return <div className="welcome-page">
     <section className="welcome-hero page-width">
-      <div className="welcome-hero-copy" data-reveal><span className="eyebrow">Preparedness built around your family</span><h1>Make a plan you’ll actually want to use.</h1><p>Turn the food your family enjoys, the supplies you already own, and the neighbors you know into one private, practical emergency plan.</p><div className="button-row"><Link className="button primary" to={session ? '/planner' : '/account?mode=signup'}>{session ? 'Open my plan' : 'Create my private plan'} <ArrowRight /></Link><Link className="button secondary" to={session ? '/library#ward-dashboard' : '/account'}>{session ? 'View ward dashboard' : 'Sign in'}</Link><Link className="button help-button" to="/help"><CircleHelp /> Show me how it works</Link></div><div className="welcome-trust"><ShieldCheck /><span><b>Your pantry stays private.</b> Only anonymous totals contribute to the ward dashboard.</span></div></div>
+      <div className="welcome-hero-copy" data-reveal><span className="eyebrow">Preparedness built around your family</span><h1>Make a plan you’ll actually want to use.</h1><p>Turn the food your family enjoys, the supplies you already own, and the neighbors you know into one private, practical emergency plan.</p><div className="button-row"><Link className="button primary" to={session ? '/planner' : '/account?mode=signup'}>{session ? 'Open my plan' : 'Create my private plan'} <ArrowRight /></Link><Link className="button secondary" to={session ? '/library#ward-dashboard' : '/account'}>{session ? 'View ward dashboard' : 'Sign in'}</Link><Link className="button help-button video-help-button" to="/help"><CirclePlay /><span><b>Show me how it works</b><small>Watch the video guide</small></span></Link></div><div className="welcome-trust"><ShieldCheck /><span><b>Your pantry stays private.</b> Only anonymous totals contribute to the ward dashboard.</span></div></div>
       <div className="welcome-hero-scene" data-reveal>
         <div className="scene-card pantry-scene"><span>My pantry</span><strong>12.4 days</strong><div><i style={{ width: '76%' }} /></div><small>Rice · beans · favorite meals · water</small></div>
         <div className="scene-card meal-scene"><Heart /><span>Meal wishlist</span><b>6 family favorites</b><small>One combined shopping list</small></div>

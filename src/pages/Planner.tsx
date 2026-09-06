@@ -1,7 +1,8 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { ChefHat, ChevronDown, Cloud, CloudOff, Droplets, Heart, Info, Minus, PackagePlus, Plus, RotateCcw, Save, Search, ShieldCheck, Trash2, Users, Utensils } from 'lucide-react'
+import { CheckCircle2, ChefHat, ChevronDown, Cloud, CloudOff, Droplets, ExternalLink, Heart, Info, Minus, PackagePlus, Plus, RotateCcw, Save, Search, ShieldCheck, Tag, Trash2, Users, Utensils } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ingredients, recipes } from '../data/recipes'
+import { dealRetailers } from '../data/retailers'
 import { householdNeeds, inventoryCalories, litersPerGallon, recipeCapacity, recipeProgress } from '../lib/planner'
 import { useLocalStorage } from '../lib/useLocalStorage'
 import type { HouseholdMember, Ingredient, InventoryItem, MealWishlistItem, Recipe } from '../types'
@@ -24,6 +25,8 @@ export default function Planner() {
   const [recipeIngredientAmounts, setRecipeIngredientAmounts] = useState<Record<string, number>>({})
   const [ingredientQuery, setIngredientQuery] = useState('')
   const [category, setCategory] = useState('All')
+  const [expandedIngredientRecipes, setExpandedIngredientRecipes] = useState<string[]>([])
+  const [wishlistNotice, setWishlistNotice] = useState('')
   const [cloudReady, setCloudReady] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
@@ -37,17 +40,23 @@ export default function Planner() {
   const visibleRecipeIngredients = useMemo(() => allIngredients.filter((item) => item.name.toLowerCase().includes(ingredientQuery.trim().toLowerCase())), [allIngredients, ingredientQuery])
   const readyRecipeCount = useMemo(() => allRecipes.filter((recipe) => recipeCapacity(recipe, inventory) > 0).length, [allRecipes, inventory])
   const wishlistNeeds = useMemo(() => {
-    const totals = new Map<string, number>()
+    const totals = new Map<string, { required: number; mealNames: Set<string> }>()
     mealWishlist.forEach((wish) => {
       const recipe = allRecipes.find((item) => item.id === wish.recipeId)
-      recipe?.ingredients.forEach((item) => totals.set(item.ingredientId, (totals.get(item.ingredientId) ?? 0) + item.amount * wish.batches))
+      recipe?.ingredients.forEach((item) => {
+        const current = totals.get(item.ingredientId) ?? { required: 0, mealNames: new Set<string>() }
+        current.required += item.amount * wish.batches
+        current.mealNames.add(recipe.name)
+        totals.set(item.ingredientId, current)
+      })
     })
-    return [...totals.entries()].map(([ingredientId, required]) => {
+    return [...totals.entries()].map(([ingredientId, total]) => {
       const ingredient = allIngredients.find((item) => item.id === ingredientId)
       const owned = inventory.find((item) => item.ingredientId === ingredientId)?.quantity ?? 0
-      return { ingredientId, name: ingredient?.name ?? ingredientId, unit: ingredient?.unit ?? 'unit', required, owned, needed: Math.max(0, required - owned) }
+      return { ingredientId, name: ingredient?.name ?? ingredientId, unit: ingredient?.unit ?? 'unit', required: total.required, owned, needed: Math.max(0, total.required - owned), mealNames: [...total.mealNames] }
     }).sort((left, right) => right.needed - left.needed)
   }, [allIngredients, allRecipes, inventory, mealWishlist])
+  const dealCandidates = wishlistNeeds.filter((item) => item.needed > 0).sort((left, right) => right.mealNames.length - left.mealNames.length || right.needed - left.needed).slice(0, 5)
 
   useEffect(() => {
     if (!session || !supabase) { setCloudReady(false); setSaveStatus('idle'); return }
@@ -84,6 +93,12 @@ export default function Planner() {
     }, 650)
     return () => window.clearTimeout(timer)
   }, [session, cloudReady, members, inventory, waterLiters, customSupplies, customRecipes, mealWishlist, needs.calories, needs.waterLiters, calories, readyRecipeCount])
+
+  useEffect(() => {
+    if (!wishlistNotice) return
+    const timer = window.setTimeout(() => setWishlistNotice(''), 5000)
+    return () => window.clearTimeout(timer)
+  }, [wishlistNotice])
 
   function changeInventory(ingredientId: string, amount: number) {
     setInventory((current) => {
@@ -146,6 +161,16 @@ export default function Planner() {
       if (!batches) return current.filter((item) => item.recipeId !== recipeId)
       return match ? current.map((item) => item.recipeId === recipeId ? { ...item, batches } : item) : [...current, { recipeId, batches }]
     })
+  }
+
+  function addMealToWishlist(recipe: Recipe) {
+    const plannedBatches = (mealWishlist.find((item) => item.recipeId === recipe.id)?.batches ?? 0) + 1
+    changeWishlist(recipe.id, 1)
+    setWishlistNotice(`${recipe.name} added. ${plannedBatches} ${plannedBatches === 1 ? 'batch is' : 'batches are'} now planned.`)
+  }
+
+  function toggleIngredientPreview(recipeId: string) {
+    setExpandedIngredientRecipes((current) => current.includes(recipeId) ? current.filter((id) => id !== recipeId) : [...current, recipeId])
   }
 
   return (
@@ -220,9 +245,11 @@ export default function Planner() {
           const progress = recipeProgress(recipe, inventory)
           const capacity = recipeCapacity(recipe, inventory)
           const ingredientNames = recipe.ingredients.map((needed) => allIngredients.find((item) => item.id === needed.ingredientId)?.name).filter(Boolean)
+          const ingredientsExpanded = expandedIngredientRecipes.includes(recipe.id)
+          const wishedBatches = mealWishlist.find((item) => item.recipeId === recipe.id)?.batches ?? 0
           return <article className="meal-progress" key={recipe.id}>
             <div><span>{recipe.tags[0]}</span><h3>{recipe.name}</h3><small>{recipe.servings} servings per batch</small></div>
-            <div className="meal-ingredient-glimpse"><span>Ingredients</span><p>{ingredientNames.slice(0, 3).join(' · ')}{ingredientNames.length > 3 ? ` + ${ingredientNames.length - 3} more` : ''}</p></div>
+            <div className="meal-ingredient-glimpse"><span>Ingredients</span><p>{ingredientNames.slice(0, ingredientsExpanded ? ingredientNames.length : 3).join(' · ')}{ingredientNames.length > 3 && <>{' '}<button type="button" className="ingredient-more" aria-expanded={ingredientsExpanded} onClick={() => toggleIngredientPreview(recipe.id)}>{ingredientsExpanded ? 'Show fewer' : `+ ${ingredientNames.length - 3} more`}</button></>}</p></div>
             <strong>{capacity}<small> batches ready</small></strong>
             <span>{members.length ? Math.floor(capacity * recipe.servings / members.length) : 0} complete household meals</span>
             <div className="progress"><i style={{ width: `${progress}%` }} /></div><span>{progress}% of one batch stocked</span>
@@ -230,14 +257,27 @@ export default function Planner() {
               const ingredient = allIngredients.find((item) => item.id === needed.ingredientId)
               const owned = inventory.find((item) => item.ingredientId === needed.ingredientId)?.quantity ?? 0
               return <li key={needed.ingredientId}><span>{ingredient?.name ?? 'Unavailable ingredient'}</span><b>{Math.max(0, needed.amount - owned).toFixed(1)} {ingredient?.unit ?? 'unit'}</b></li>
-            })}</ul></details><div className="meal-card-actions"><button onClick={() => changeWishlist(recipe.id, 1)}><Heart /> Add to wishlist</button>{recipe.isCustom && <button onClick={() => { setCustomRecipes((current) => current.filter((item) => item.id !== recipe.id)); setMealWishlist((current) => current.filter((item) => item.recipeId !== recipe.id)) }}><Trash2 /> Remove custom meal</button>}</div>
+            })}</ul></details><div className="meal-card-actions"><button type="button" className={wishedBatches ? 'in-wishlist' : ''} onClick={() => addMealToWishlist(recipe)}><Heart fill={wishedBatches ? 'currentColor' : 'none'} /> {wishedBatches ? `Add another · ${wishedBatches} planned` : 'Add to my wishlist'}</button>{recipe.isCustom && <button type="button" onClick={() => { setCustomRecipes((current) => current.filter((item) => item.id !== recipe.id)); setMealWishlist((current) => current.filter((item) => item.recipeId !== recipe.id)) }}><Trash2 /> Remove custom meal</button>}</div>
           </article>
         })}</div>
+        <div className="wishlist-notice" aria-live="polite" aria-atomic="true">{wishlistNotice && <><CheckCircle2 /><span>{wishlistNotice}</span><a href="#meal-wishlist">View wishlist</a></>}</div>
       </section>
 
-      <section className="wishlist-section">
+      <section className="wishlist-section" id="meal-wishlist">
         <div className="section-heading"><span className="eyebrow">Step 3</span><h2>Plan the meals you want to have.</h2><p>Choose target batches and the planner will combine every ingredient into one private supply list.</p></div>
-        {!mealWishlist.length ? <div className="empty-state"><Heart /><h3>Your meal wishlist is empty.</h3><p>Add a favorite meal above to begin planning quantities.</p></div> : <div className="wishlist-layout"><div className="wishlist-meals">{mealWishlist.map((wish) => { const recipe = allRecipes.find((item) => item.id === wish.recipeId); if (!recipe) return null; return <article key={wish.recipeId}><div><b>{recipe.name}</b><small>{wish.batches * recipe.servings} planned servings</small></div><div className="stepper"><button onClick={() => changeWishlist(wish.recipeId, -1)}><Minus /></button><strong>{wish.batches}</strong><button onClick={() => changeWishlist(wish.recipeId, 1)}><Plus /></button></div></article> })}</div><aside className="wishlist-needs"><h3>Combined supply needs</h3><ul>{wishlistNeeds.map((item) => <li key={item.ingredientId} className={item.needed === 0 ? 'stocked' : ''}><span><b>{item.name}</b><small>{Number(item.required.toFixed(2))} {item.unit} planned · {Number(item.owned.toFixed(2))} on hand</small></span><strong>{item.needed === 0 ? 'Stocked' : `${Number(item.needed.toFixed(2))} ${item.unit} needed`}</strong></li>)}</ul></aside></div>}
+        {!mealWishlist.length ? <div className="empty-state"><Heart /><h3>Your meal wishlist is empty.</h3><p>Add a favorite meal above to begin planning quantities.</p></div> : <>
+          <div className="wishlist-layout"><div className="wishlist-meals">{mealWishlist.map((wish) => { const recipe = allRecipes.find((item) => item.id === wish.recipeId); if (!recipe) return null; return <article key={wish.recipeId}><div><b>{recipe.name}</b><small>{wish.batches * recipe.servings} planned servings</small></div><div className="stepper"><button type="button" aria-label={`Plan one fewer batch of ${recipe.name}`} onClick={() => changeWishlist(wish.recipeId, -1)}><Minus /></button><strong>{wish.batches}</strong><button type="button" aria-label={`Plan one more batch of ${recipe.name}`} onClick={() => changeWishlist(wish.recipeId, 1)}><Plus /></button></div></article> })}</div><aside className="wishlist-needs"><h3>Combined supply needs</h3><ul>{wishlistNeeds.map((item) => <li key={item.ingredientId} className={item.needed === 0 ? 'stocked' : ''}><span><b>{item.name}</b><small>{Number(item.required.toFixed(2))} {item.unit} planned · {Number(item.owned.toFixed(2))} on hand</small></span><strong>{item.needed === 0 ? 'Stocked' : `${Number(item.needed.toFixed(2))} ${item.unit} needed`}</strong></li>)}</ul></aside></div>
+
+          <div className="deal-helper">
+            <div className="deal-helper-heading"><Tag /><div><span className="eyebrow">Local savings helper</span><h3>What to watch for in this week’s deals</h3><p>These priorities come from the meals you planned and subtract what is already in your pantry.</p></div></div>
+            {dealCandidates.length ? <div className="deal-candidate-list">{dealCandidates.map((item, index) => <article key={item.ingredientId}>
+              <div><span>Priority {index + 1}</span><h4>{item.name}</h4><p>{Number(item.needed.toFixed(2))} {item.unit} needed for {item.mealNames.join(', ')}</p></div>
+              <div className="deal-item-links">{dealRetailers.filter((retailer) => retailer.searchUrl).map((retailer) => <a key={retailer.id} href={retailer.searchUrl!(item.name)} target="_blank" rel="noreferrer">{retailer.name}<ExternalLink /></a>)}</div>
+            </article>)}</div> : <div className="deal-all-stocked"><CheckCircle2 /><p><b>Your wishlist ingredients are already stocked.</b> Add another batch or meal when you are ready to build the next shopping list.</p></div>}
+            <div className="weekly-offer-links"><span>Check current local offers</span><div>{dealRetailers.map((retailer) => <a key={retailer.id} href={retailer.offerUrl} target="_blank" rel="noreferrer"><b>{retailer.name}</b><small>{retailer.offerLabel}</small><ExternalLink /></a>)}</div></div>
+            <p className="deal-disclaimer">Retailer pages show the current prices and dates for the store you select. Verify package size, pickup location, availability, and the sale end date before making a special trip. Trader Joe’s is not listed because it does not run weekly sales or coupons.</p>
+          </div>
+        </>}
       </section>
 
     </div>

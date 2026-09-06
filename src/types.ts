@@ -7,6 +7,15 @@ export type DocumentRecord = {
   description: string | null
 }
 
+export type SiteMediaRecord = {
+  slot: 'help-overview'
+  title: string
+  description: string | null
+  file_path: string
+  mime_type: 'video/mp4' | 'video/webm' | 'video/ogg'
+  updated_at: string
+}
+
 export type HouseholdMember = { id: string; age: number }
 
 export type InventoryItem = {
