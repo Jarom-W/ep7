@@ -1,13 +1,14 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { Bug, FileUp, KeyRound, Link2, Loader2, LogIn, LogOut, MapPin, Newspaper, Pencil, PlayCircle, Plus, ShieldCheck, Trash2, Users, Video } from 'lucide-react'
+import { Bug, FileUp, KeyRound, Link2, Loader2, LogIn, LogOut, MapPin, Newspaper, Pencil, PlayCircle, Plus, ShieldCheck, Trash2, Users } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
-import { isSupabaseConfigured, publicMediaUrl, supabase } from '../lib/supabase'
+import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { BlockCaptain, BlockHousehold, DocumentRecord, FamilyProfile, SiteMediaRecord } from '../types'
 import { blockDetails } from '../data/blockDetails'
 import { useSearchParams } from 'react-router-dom'
 import RadioAdmin from '../components/RadioAdmin'
 import WalkieTalkieIcon from '../components/WalkieTalkieIcon'
-import HelpVideoUpload from '../components/HelpVideoUpload'
+import HelpVideoSettings from '../components/HelpVideoSettings'
+import HelpVideoCard from '../components/HelpVideoCard'
 
 type FeedbackRecord = { id: string; type: string; name: string | null; email: string | null; subject: string; message: string; status: string; created_at: string }
 type MinisteringGrant = { id: string; grantee_user_id: string; target_household_id: string; can_write: boolean }
@@ -158,10 +159,10 @@ export default function Specialist() {
     {tab === 'documents' && <div className="admin-grid">
       <div className="admin-stack">
         <form className="admin-form" onSubmit={uploadDocument}><h2><FileUp /> Publish a PDF</h2><label><span>Document type</span><select name="kind"><option value="newsletter">Monthly newsletter</option><option value="plan">Standing emergency plan</option></select></label><label><span>Title</span><input required name="title" placeholder="August 2026 Preparedness Newsletter" /></label><label><span>Short description</span><textarea name="description" rows={3} /></label><label><span>Publication date</span><input name="published_at" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label className="file-field"><FileUp /><span><b>Choose PDF</b><small>PDF files only</small></span><input required name="file" type="file" accept="application/pdf" /></label><button className="button primary">Upload & publish</button></form>
-        <HelpVideoUpload onPublished={setHelpVideo} />
+        <HelpVideoSettings video={helpVideo} onPublished={setHelpVideo} />
       </div>
       <div className="admin-stack"><div className="admin-list"><h2>Published documents</h2>{documents.map((document) => <div className="admin-list-row" key={document.id}><Newspaper /><span><b>{document.title}</b><small>{document.kind} · {new Date(document.published_at).toLocaleDateString()}</small></span><button onClick={() => remove('documents', document.id)} aria-label="Delete"><Trash2 /></button></div>)}</div>
-        <div className="admin-list help-video-admin"><h2><PlayCircle /> Current Help video</h2>{helpVideo ? <><video controls preload="metadata" src={publicMediaUrl(helpVideo.file_path)} /><div className="admin-list-row"><Video /><span><b>{helpVideo.title}</b><small>Updated {new Date(helpVideo.updated_at).toLocaleString()}</small></span></div></> : <div className="empty-state">No Help video has been published yet.</div>}</div>
+        <div className="admin-list help-video-admin"><h2><PlayCircle /> Current Help video</h2><HelpVideoCard video={helpVideo} /></div>
       </div>
     </div>}
     {tab === 'map' && <div className="admin-grid">

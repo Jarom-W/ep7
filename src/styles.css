@@ -879,3 +879,21 @@ footer p { max-width: 500px; margin: 8px 0 0; font-size: .86rem; }
 .video-upload-progress { display: grid; gap: 8px; font-size: .8rem; }
 .video-upload-progress progress { width: 100%; accent-color: var(--green); }
 .video-upload-success { color: var(--green); font-size: .85rem; }
+
+/* External walkthrough: a keyboard-accessible play card, with no video download. */
+a.help-video-card { display: block; color: white; text-decoration: none; border-radius: 18px; transition: border-color .2s, box-shadow .2s; }
+a.help-video-card:hover { border-color: var(--gold); box-shadow: 0 25px 65px rgba(0,0,0,.35); }
+a.help-video-card:focus-visible { outline: 3px solid var(--gold); outline-offset: 5px; }
+a.help-video-card > .help-video-poster { padding: 24px 24px 0; aspect-ratio: 16 / 10; display: flex; flex-direction: column; align-items: center; justify-content: space-between; background: radial-gradient(ellipse at 75% 20%, #65806a 0, transparent 55%), linear-gradient(140deg, #254f40, #0b221c); }
+.help-video-brand { display: flex; align-items: center; align-self: flex-start; gap: 9px; color: #e8dfc7; font-size: .65rem; letter-spacing: .18em; }
+.help-video-play { display: grid; place-items: center; width: 80px; height: 80px; margin: 22px 0; border-radius: 50%; background: var(--gold); color: #102a23; box-shadow: 0 0 0 12px #e6bd7015, 0 10px 30px #0004; transition: transform .2s; }
+.help-video-play svg { width: 32px; height: 32px; margin-left: 4px; }
+.help-video-card:hover .help-video-play { transform: scale(1.08); }
+.help-video-caption { color: #e1eadd; font-size: .8rem; text-align: center; }
+.help-video-controls { display: flex; align-items: center; gap: 12px; width: 100%; padding: 20px 0 15px; opacity: .65; }
+.help-video-controls svg { width: 14px; height: 14px; }
+.help-video-controls > span { flex: 1; height: 3px; border-radius: 3px; background: linear-gradient(to right, var(--gold) 14%, #ffffff35 14%); }
+.help-video-action { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 18px; color: var(--gold); font-size: .8rem; font-weight: 700; }
+.help-video-action svg { width: 17px; height: 17px; }
+.help-video-action small { flex-basis: 100%; color: #bcd0c7; font-size: .65rem; font-weight: 400; }
+@media (prefers-reduced-motion: reduce) { .help-video-card, .help-video-play { transition: none !important; } }
