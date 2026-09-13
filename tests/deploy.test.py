@@ -31,8 +31,27 @@ class DeploymentTests(unittest.TestCase):
         docker.write_text('''#!/usr/bin/env bash
 set -eu
 printf '%s\\n' "$*" >> "$DOCKER_LOG"
-if [[ "$1" == inspect ]]; then echo sha256:old; exit; fi
-if [[ "$1" == image ]]; then exit; fi
+if [[ "$1" == inspect ]]; then
+  case "$3" in
+    *Config.Image*) echo ep7-web;;
+    *platform.os*) echo linux/arm64;;
+    *ImageManifestDescriptor.digest*) echo sha256:manifest;;
+    *) echo sha256:old;;
+  esac
+  exit
+fi
+if [[ "$1" == image ]]; then
+  if [[ "$2" == inspect ]]; then
+    case "$*" in
+      *sha256:old*) [[ "${CONTAINERD_IMAGES:-0}" != 1 ]];;
+      *--platform*)
+        if [[ "${MISMATCH_IMAGE:-0}" == 1 ]]; then echo sha256:different;
+        else echo sha256:manifest; fi;;
+      *) echo sha256:index;;
+    esac
+  fi
+  exit
+fi
 case " $* " in
   *" ps -q web "*) echo container-id;;
   *" config "*) cat "$TEST_REPO/compose.yaml";;
@@ -80,6 +99,27 @@ esac
         self.assertEqual(self.git('-C', str(self.repo), 'rev-parse', 'HEAD'), sha)
         self.assertEqual(self.run_deploy().returncode, 0)
         self.assertEqual((self.state / 'deployed-sha').read_text().strip(), sha)
+
+    def test_containerd_image_is_preserved_by_verified_index_id(self):
+        sha = self.update()
+        result = self.run_deploy(CONTAINERD_IMAGES='1')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.log.read_text()
+        self.assertIn('image inspect --platform linux/arm64 --format {{.Id}} sha256:index', calls)
+        self.assertIn('image tag sha256:index ep7-web:rollback', calls)
+        self.assertEqual((self.state / 'deployed-sha').read_text().strip(), sha)
+
+    def test_changed_image_tag_cannot_be_used_for_rollback(self):
+        before = self.git('-C', str(self.repo), 'rev-parse', 'HEAD')
+        self.update()
+        result = self.run_deploy(CONTAINERD_IMAGES='1', MISMATCH_IMAGE='1')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('rollback image does not match', result.stdout)
+        calls = self.log.read_text()
+        self.assertNotIn('image tag', calls)
+        self.assertNotIn('build --pull', calls)
+        self.assertNotIn(' up ', calls)
+        self.assertEqual(self.git('-C', str(self.repo), 'rev-parse', 'HEAD'), before)
 
     def test_unhealthy_container_rolls_back_and_preserves_last_success(self):
         self.assertEqual(self.run_deploy().returncode, 0)

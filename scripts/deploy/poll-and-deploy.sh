@@ -31,6 +31,17 @@ container=$(compose ps -q web)
 rollback_available=0
 if [[ -n "$container" ]]; then
   image=$(docker inspect --format '{{.Image}}' "$container")
+  if ! docker image inspect "$image" >/dev/null 2>&1; then
+    # The containerd store exposes index/manifest IDs instead of the container's
+    # config digest. Resolve its named image, then verify it still matches the
+    # running platform manifest before preserving the immutable index ID.
+    source=$(docker inspect --format '{{.Config.Image}}' "$container")
+    manifest=$(docker inspect --format '{{.ImageManifestDescriptor.digest}}' "$container")
+    platform=$(docker inspect --format '{{.ImageManifestDescriptor.platform.os}}/{{.ImageManifestDescriptor.platform.architecture}}{{with index .ImageManifestDescriptor.platform "variant"}}/{{.}}{{end}}' "$container")
+    image=$(docker image inspect --format '{{.Id}}' "$source")
+    actual=$(docker image inspect --platform "$platform" --format '{{.Id}}' "$image")
+    [[ -n "$manifest" && "$actual" == "$manifest" ]] || { log 'Refusing to deploy: rollback image does not match the running container.'; exit 1; }
+  fi
   docker image tag "$image" "$project-web:rollback"
   if [[ ! -f "$state/last-good-compose.yaml" ]]; then
     compose config > "$state/last-good-compose.yaml.tmp"
