@@ -115,6 +115,8 @@ footer p { max-width: 500px; margin: 8px 0 0; font-size: .86rem; }
 .document-feature h2 { font-size: 2rem; margin: 6px 0; }
 .document-feature p { color: #b9cbc3; margin: 0; }
 .document-feature .button { color: var(--green-dark); background: #fffefa; }
+.document-feature .button:hover, .document-feature .button:focus-visible { color: var(--green-dark); background: var(--sage); }
+.document-feature .button:focus-visible { outline: 2px solid white; outline-offset: 3px; }
 .newsletter-section { margin-top: 70px; }
 .document-list { border-top: 1px solid var(--line); }
 .document-row { display: grid; grid-template-columns: 70px 1fr auto; gap: 25px; align-items: center; padding: 28px 10px; border-bottom: 1px solid var(--line); }
@@ -135,10 +137,12 @@ footer p { max-width: 500px; margin: 8px 0 0; font-size: .86rem; }
 .summary-title span, .need-card > span { color: var(--muted); font-size: .76rem; }
 .summary-title strong { margin-top: 2px; }
 .members-list { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0 12px; }
-.members-list label { position: relative; }
+.household-member { display: flex; align-items: end; gap: 6px; }
 .members-list label > span { display: block; color: var(--muted); font-size: .68rem; margin-bottom: 4px; }
-.members-list input { width: 88px; padding: 8px 28px 8px 10px; border: 1px solid var(--line); }
-.members-list button { position: absolute; right: 3px; bottom: 8px; border: 0; background: none; color: var(--rust); cursor: pointer; }
+.members-list input { width: 88px; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); }
+.members-list button { min-height: 44px; padding: 8px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 4px; background: white; color: #93452d; font-size: .75rem; cursor: pointer; }
+.members-list button:hover { background: #faeee8; border-color: var(--rust); }
+.members-list button:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
 .add-person { border: 0; padding: 0; display: flex; gap: 5px; align-items: center; color: var(--green); background: none; font-size: .77rem; font-weight: 700; cursor: pointer; }
 .need-card { display: flex; flex-direction: column; justify-content: center; }
 .need-card > svg { margin-bottom: 20px; color: var(--rust); }
@@ -871,3 +875,7 @@ footer p { max-width: 500px; margin: 8px 0 0; font-size: .86rem; }
   .help-page [data-help-reveal] { opacity: 1; transform: none; transition: none; }
   .journey-line i, .journey-step svg, .journey-cursor, .water-demo i, .spin { animation: none; }
 }
+
+.video-upload-progress { display: grid; gap: 8px; font-size: .8rem; }
+.video-upload-progress progress { width: 100%; accent-color: var(--green); }
+.video-upload-success { color: var(--green); font-size: .85rem; }

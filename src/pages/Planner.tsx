@@ -14,6 +14,7 @@ const initialMembers: HouseholdMember[] = [{ id: 'member-1', age: 35 }]
 export default function Planner() {
   const { session } = useAuth()
   const [members, setMembers] = useLocalStorage<HouseholdMember[]>('ward-members', initialMembers)
+  const [ageDraft, setAgeDraft] = useState<{ id: string; value: string } | null>(null)
   const [inventory, setInventory] = useLocalStorage<InventoryItem[]>('ward-inventory', [])
   const [waterLiters, setWaterLiters] = useLocalStorage<number>('ward-water', 0)
   const [waterUnit, setWaterUnit] = useLocalStorage<'gallons' | 'liters'>('ward-water-unit', 'gallons')
@@ -186,9 +187,20 @@ export default function Planner() {
         <div className="summary-household">
           <div className="summary-title"><Users /><div><span>Household</span><strong>{members.length} {members.length === 1 ? 'person' : 'people'}</strong></div></div>
           <div className="members-list">{members.map((member, index) => (
-            <label key={member.id}><span>Person {index + 1} age</span><input type="number" min="0" max="110" value={member.age} onChange={(event) => setMembers(members.map((item) => item.id === member.id ? { ...item, age: Number(event.target.value) } : item))} />
-              {members.length > 1 && <button aria-label="Remove person" onClick={() => setMembers(members.filter((item) => item.id !== member.id))}><Minus size={14} /></button>}
-            </label>
+            <div className="household-member" key={member.id}>
+              <label><span>Person {index + 1} age</span><input type="number" min="0" max="110" step="1"
+                value={ageDraft?.id === member.id ? ageDraft.value : member.age}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setAgeDraft({ id: member.id, value })
+                  if (value !== '' && event.target.validity.valid) {
+                    setMembers((current) => current.map((item) => item.id === member.id ? { ...item, age: Number(value) } : item))
+                  }
+                }}
+                onBlur={() => setAgeDraft(null)}
+              /></label>
+              {members.length > 1 && <button type="button" aria-label={`Remove person ${index + 1}`} onClick={() => setMembers((current) => current.filter((item) => item.id !== member.id))}><Trash2 size={16} /> Remove</button>}
+            </div>
           ))}</div>
           <button className="add-person" onClick={() => setMembers([...members, { id: crypto.randomUUID(), age: 18 }])}><Plus size={16} /> Add household member</button>
         </div>

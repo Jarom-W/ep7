@@ -8,17 +8,21 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "lint": "eslint .",
-    "test:radio": "node --experimental-strip-types --test tests/radioCalendar.test.mjs"
+    "test:radio": "node --experimental-strip-types --test tests/radioCalendar.test.mjs",
+    "test:browser": "playwright test",
+    "test:deploy": "python3 tests/deploy.test.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.55.0",
     "lucide-react": "^0.468.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "^7.8.0"
+    "react-router-dom": "^7.8.0",
+    "tus-js-client": "^4.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@playwright/test": "^1.63.0",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^4.6.0",

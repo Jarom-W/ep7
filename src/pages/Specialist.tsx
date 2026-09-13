@@ -7,6 +7,7 @@ import { blockDetails } from '../data/blockDetails'
 import { useSearchParams } from 'react-router-dom'
 import RadioAdmin from '../components/RadioAdmin'
 import WalkieTalkieIcon from '../components/WalkieTalkieIcon'
+import HelpVideoUpload from '../components/HelpVideoUpload'
 
 type FeedbackRecord = { id: string; type: string; name: string | null; email: string | null; subject: string; message: string; status: string; created_at: string }
 type MinisteringGrant = { id: string; grantee_user_id: string; target_household_id: string; can_write: boolean }
@@ -86,37 +87,6 @@ export default function Specialist() {
     if (!error) { event.currentTarget.reset(); await loadAdminData() }
   }
 
-  async function uploadHelpVideo(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!supabase || !session) return
-    setMessage('Uploading guide video…')
-    const form = new FormData(event.currentTarget)
-    const file = form.get('file') as File
-    const supportedTypes = ['video/mp4', 'video/webm', 'video/ogg'] as const
-    if (!file || !supportedTypes.includes(file.type as typeof supportedTypes[number])) {
-      setMessage('Please choose an MP4, WebM, or Ogg video.')
-      return
-    }
-    if (file.size > 262144000) {
-      setMessage('The guide video must be 250 MB or smaller.')
-      return
-    }
-    const path = `help/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`
-    const { error: uploadError } = await supabase.storage.from('preparedness-media').upload(path, file, { contentType: file.type, cacheControl: '3600' })
-    if (uploadError) { setMessage(uploadError.message); return }
-    const { error } = await supabase.from('site_media').upsert({
-      slot: 'help-overview',
-      title: String(form.get('title')).trim(),
-      description: String(form.get('description') || '').trim() || null,
-      file_path: path,
-      mime_type: file.type,
-      updated_by: session.user.id,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'slot' })
-    setMessage(error?.message ?? 'How-to video published successfully.')
-    if (!error) { event.currentTarget.reset(); await loadAdminData() }
-  }
-
   async function addMapRecord(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!supabase) return
@@ -188,7 +158,7 @@ export default function Specialist() {
     {tab === 'documents' && <div className="admin-grid">
       <div className="admin-stack">
         <form className="admin-form" onSubmit={uploadDocument}><h2><FileUp /> Publish a PDF</h2><label><span>Document type</span><select name="kind"><option value="newsletter">Monthly newsletter</option><option value="plan">Standing emergency plan</option></select></label><label><span>Title</span><input required name="title" placeholder="August 2026 Preparedness Newsletter" /></label><label><span>Short description</span><textarea name="description" rows={3} /></label><label><span>Publication date</span><input name="published_at" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></label><label className="file-field"><FileUp /><span><b>Choose PDF</b><small>PDF files only</small></span><input required name="file" type="file" accept="application/pdf" /></label><button className="button primary">Upload & publish</button></form>
-        <form className="admin-form" onSubmit={uploadHelpVideo}><h2><Video /> Publish the Help video</h2><p className="admin-help">This video appears at the top of the Help page. Uploading again replaces the video shown on the site.</p><label><span>Video title</span><input required name="title" maxLength={160} defaultValue="How to use Ready Together" /></label><label><span>Short description</span><textarea name="description" maxLength={500} rows={3} placeholder="A quick tour of the household plan, pantry, meals, and ward tools." /></label><label className="file-field"><Video /><span><b>Choose video</b><small>MP4, WebM, or Ogg · up to 250 MB</small></span><input required name="file" type="file" accept="video/mp4,video/webm,video/ogg" /></label><button className="button primary">Upload & publish video</button></form>
+        <HelpVideoUpload onPublished={setHelpVideo} />
       </div>
       <div className="admin-stack"><div className="admin-list"><h2>Published documents</h2>{documents.map((document) => <div className="admin-list-row" key={document.id}><Newspaper /><span><b>{document.title}</b><small>{document.kind} · {new Date(document.published_at).toLocaleDateString()}</small></span><button onClick={() => remove('documents', document.id)} aria-label="Delete"><Trash2 /></button></div>)}</div>
         <div className="admin-list help-video-admin"><h2><PlayCircle /> Current Help video</h2>{helpVideo ? <><video controls preload="metadata" src={publicMediaUrl(helpVideo.file_path)} /><div className="admin-list-row"><Video /><span><b>{helpVideo.title}</b><small>Updated {new Date(helpVideo.updated_at).toLocaleString()}</small></span></div></> : <div className="empty-state">No Help video has been published yet.</div>}</div>
