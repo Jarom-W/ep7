@@ -32,6 +32,11 @@ async function backend(page: Page, options: { publishError?: boolean; setupError
   })
   await page.route('https://test.storage.supabase.co/**', async (route) => {
     uploadRequests++
+    // Enforce the actual wire header: XHR combines duplicate Authorization values.
+    // Supabase rejects "Bearer token, Bearer token" with this exact error.
+    if (route.request().headers().authorization !== `Bearer ${session.access_token}`) {
+      return route.fulfill({ status: 400, json: { statusCode: '403', error: 'AccessDenied', message: 'Invalid Compact JWS' } })
+    }
     if (options.uploadError) return route.fulfill({ status: 403, body: 'Storage permission denied' })
     const sent = route.request().postDataBuffer()?.length ?? 0
     const offset = Number(route.request().headers()['upload-offset'] ?? 0) + sent
