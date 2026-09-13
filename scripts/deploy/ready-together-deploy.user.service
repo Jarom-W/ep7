@@ -7,3 +7,5 @@ EnvironmentFile=%h/.config/ready-together-deploy/environment
 ExecStart=%h/.local/lib/ready-together/poll-and-deploy.sh ${REPO_DIR} ${STATE_DIR} ${COMPOSE_PROJECT}
 TimeoutStartSec=30min
 UMask=0077
+StandardOutput=append:%h/.local/state/ready-together-deploy/deploy.log
+StandardError=inherit

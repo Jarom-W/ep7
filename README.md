@@ -108,14 +108,14 @@ The Compose project name defaults to the checkout directory name, matching ordin
 ```bash
 # Trigger a check immediately and view its logs.
 systemctl --user start ready-together-deploy.service
-journalctl --user -u ready-together-deploy.service -n 100 --no-pager
+tail -n 100 "$HOME/.local/state/ready-together-deploy/deploy.log"
 systemctl --user list-timers ready-together-deploy.timer
 
 # Pause automatic updates (for maintenance or investigating a bad release).
 systemctl --user disable --now ready-together-deploy.timer
 ```
 
-The first poll occurs shortly after installation and on boot. Runs time out after 30 minutes. State, the last successful commit, and rollback configuration live in `~/.local/state/ready-together-deploy`; configuration lives in `~/.config/ready-together-deploy/environment`. An optional system-wide install is available by running the installer with `sudo`; it uses `/var/lib/ready-together-deploy` and `/etc/ready-together-deploy.conf`, and its management commands omit `--user`. Install only one timer for this checkout. Re-run the installer to apply future changes to the deployment scripts or timer. Logs remain in the system journal. Disk cleanup is manual; the runner does not prune unrelated Docker images or volumes. If rollback fails, the log explicitly reports it; inspect Docker before retrying. Revert a bad release through a new commit on `main` instead of force-pushing or resetting the Pi checkout.
+The first poll occurs shortly after installation and on boot. Runs time out after 30 minutes. State, the last successful commit, and rollback configuration live in `~/.local/state/ready-together-deploy`; configuration lives in `~/.config/ready-together-deploy/environment`. An optional system-wide install is available by running the installer with `sudo`; it uses `/var/lib/ready-together-deploy` and `/etc/ready-together-deploy.conf`, and its management commands omit `--user`. Install only one timer for this checkout. Re-run the installer to apply future changes to the deployment scripts or timer. Build output and errors append to `deploy.log` in the state directory, so logs remain readable even when the system journal is unavailable. Disk cleanup is manual; the runner does not prune unrelated Docker images or volumes. If rollback fails, the log explicitly reports it; inspect Docker before retrying. Revert a bad release through a new commit on `main` instead of force-pushing or resetting the Pi checkout.
 
 The GitHub Checks workflow runs lint, build, browser regressions, radio tests, and deployment-runner tests. Protect `main` with the `verify` check if merges should require it. The Pi deploys merged commits directly, so merge only reviewed, passing changes. Supabase migrations and Edge Function deployments remain separate from this Docker timer: apply required migrations before merging a frontend that depends on them.
 
