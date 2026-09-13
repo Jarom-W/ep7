@@ -35,11 +35,11 @@ export async function publishHelpVideo(client: SupabaseClient, projectUrl: strin
       uploadDataDuringCreation: true,
       removeFingerprintOnSuccess: true,
       storeFingerprintForResuming: false,
-      headers: { authorization: `Bearer ${session.access_token}` },
       metadata: { bucketName: 'preparedness-media', objectName: path, contentType, cacheControl: '3600' },
       onBeforeRequest: async (request) => {
         const { data, error } = await client.auth.getSession()
         if (error || !data.session) throw new Error('Your session expired. Sign in again and retry.')
+        // XHR appends repeated headers. Set this only here, never in options.headers too.
         request.setHeader('authorization', `Bearer ${data.session.access_token}`)
       },
       onProgress: (sent, total) => onProgress(Math.round(sent / total * 100)),
