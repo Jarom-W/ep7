@@ -1,0 +1,28 @@
+name: Checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:radio
+      - run: npm run test:deploy
+      - run: for script in scripts/deploy/*.sh; do bash -n "$script"; done
+      - run: npm run build
+      - run: docker compose config --quiet
+        env:
+          VITE_SUPABASE_URL: https://test.supabase.co
+          VITE_SUPABASE_ANON_KEY: test-public-key
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser

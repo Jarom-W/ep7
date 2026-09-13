@@ -5,3 +5,5 @@ dist
 *.log
 *.tsbuildinfo
 *:Zone.Identifier
+playwright-report/
+test-results/

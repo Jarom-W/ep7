@@ -88,6 +88,43 @@ sudo systemctl enable --now cloudflared
 
 In Cloudflare, enable Always Use HTTPS, Bot Fight Mode, and a conservative rate-limit rule for the public site. Keep the Pi patched and do not expose ports 80, 443, 5432, or 22 through the router.
 
+## Automatic deployment from main
+
+The Pi can poll GitHub five minutes after each completed check using the included systemd timer. It fetches `origin/main`, fast-forwards the checkout, builds while the existing container stays up, and replaces the `web` container only after the build succeeds. Docker must report the new container healthy before its commit is recorded as deployed. A failed startup restores the previous image/configuration; failed builds and startups are retried on the next poll, even if the checkout already has the new commit. A file lock prevents overlapping runs.
+
+One-time setup **on the Pi**, after merging and pulling this change:
+
+```bash
+cd /absolute/path/to/ep7
+git switch main
+git pull --ff-only origin main
+bash scripts/deploy/install.sh "$PWD" "$USER"
+```
+
+The default installs a user-owned timer. User lingering must be enabled so it survives logout and starts on boot; if needed, run `sudo loginctl enable-linger "$USER"` once. Use the Linux account that owns this clone and already runs Docker successfully without `sudo`. The installer verifies a clean `main` checkout, `.env`, Docker Compose health-wait support, and noninteractive GitHub access. For private repositories, configure a read-only SSH deploy key (without an interactive passphrase) or a credential helper for that account. The timer uses that account's credentials; it needs no inbound webhook or new public port.
+
+The Compose project name defaults to the checkout directory name, matching ordinary `docker compose` usage. If the existing deployment uses `-p` or `COMPOSE_PROJECT_NAME`, pass that **same** name as a third installer argument, e.g. `bash scripts/deploy/install.sh "$PWD" "$USER" existing-project`. Confirm the existing name with `docker compose ls` before installation. Keep production edits out of tracked files; `.env` remains ignored and preserved.
+
+```bash
+# Trigger a check immediately and view its logs.
+systemctl --user start ready-together-deploy.service
+journalctl --user -u ready-together-deploy.service -n 100 --no-pager
+systemctl --user list-timers ready-together-deploy.timer
+
+# Pause automatic updates (for maintenance or investigating a bad release).
+systemctl --user disable --now ready-together-deploy.timer
+```
+
+The first poll occurs shortly after installation and on boot. Runs time out after 30 minutes. State, the last successful commit, and rollback configuration live in `~/.local/state/ready-together-deploy`; configuration lives in `~/.config/ready-together-deploy/environment`. An optional system-wide install is available by running the installer with `sudo`; it uses `/var/lib/ready-together-deploy` and `/etc/ready-together-deploy.conf`, and its management commands omit `--user`. Install only one timer for this checkout. Re-run the installer to apply future changes to the deployment scripts or timer. Logs remain in the system journal. Disk cleanup is manual; the runner does not prune unrelated Docker images or volumes. If rollback fails, the log explicitly reports it; inspect Docker before retrying. Revert a bad release through a new commit on `main` instead of force-pushing or resetting the Pi checkout.
+
+The GitHub Checks workflow runs lint, build, browser regressions, radio tests, and deployment-runner tests. Protect `main` with the `verify` check if merges should require it. The Pi deploys merged commits directly, so merge only reviewed, passing changes. Supabase migrations and Edge Function deployments remain separate from this Docker timer: apply required migrations before merging a frontend that depends on them.
+
+## Publishing the Help video
+
+Sign in as the specialist, open **Documents → Publish the Help video**, choose an MP4, WebM, or Ogg file, and click **Upload & publish video**. The selected filename, upload percentage, publishing status, and any errors appear beside the form. Keep the page open until the success message appears; the current-video preview updates immediately and the published video becomes available on `/help`.
+
+Uploads use [Supabase's resumable upload protocol](https://supabase.com/docs/guides/storage/uploads/resumable-uploads) with 6 MB chunks and automatic retries for interrupted requests. The application accepts files up to 250 MB; the Supabase project's global upload limit must also allow the file size (a bucket limit cannot override a lower project/plan limit). The existing `20260906000000_help_video.sql` migration creates the `preparedness-media` bucket, `site_media` record, and specialist-only write policies. Apply it with the other pending migrations if video publishing reports a missing table or bucket. The old published record remains in place until the replacement upload and database write succeed. Old files, or files uploaded successfully before a publication failure, remain in Storage for manual cleanup.
+
 ## Content and privacy notes
 
 - The green walkie-talkie button opens `/radio`, a public Stake Radio Communications calendar and resource page. Specialists manage its events and information under **Specialist → Stake radio** (or `/specialist?tab=radio`).
@@ -106,6 +143,9 @@ In Cloudflare, enable Always Use HTTPS, Bot Fight Mode, and a conservative rate-
 ```bash
 npm run lint
 npm run test:radio
+npm run test:deploy
+npx playwright install chromium
+npm run test:browser
 npm run build
 docker compose config
 ```

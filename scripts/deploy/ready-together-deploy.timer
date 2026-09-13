@@ -1,0 +1,10 @@
+[Unit]
+Description=Check Ready Together main for updates every five minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=5min
+Unit=ready-together-deploy.service
+
+[Install]
+WantedBy=timers.target

@@ -5,3 +5,5 @@ dist
 .env.local
 *.log
 photos/*.Zone.Identifier
+playwright-report
+test-results

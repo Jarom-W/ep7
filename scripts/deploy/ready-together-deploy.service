@@ -1,0 +1,13 @@
+[Unit]
+Description=Deploy Ready Together from main
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=@USER@
+EnvironmentFile=/etc/ready-together-deploy.conf
+ExecStart=/usr/local/lib/ready-together/poll-and-deploy.sh ${REPO_DIR} ${STATE_DIR} ${COMPOSE_PROJECT}
+TimeoutStartSec=30min
+UMask=0077
