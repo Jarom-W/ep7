@@ -121,9 +121,9 @@ The GitHub Checks workflow runs lint, build, browser regressions, radio tests, a
 
 ## Publishing the Help video
 
-Sign in as the specialist, open **Documents → Publish the Help video**, choose an MP4, WebM, or Ogg file, and click **Upload & publish video**. The selected filename, upload percentage, publishing status, and any errors appear beside the form. Keep the page open until the success message appears; the current-video preview updates immediately and the published video becomes available on `/help`.
+Sign in as the specialist (superuser), open **Documents → Help video settings**, edit the HTTPS video link, title, and description, then click **Save video link**. The Help page presents a video-style play card that opens the saved link in a new tab. For Google Drive, enable “Anyone with the link” sharing. The supplied Drive walkthrough is the default until a custom link is saved.
 
-Uploads use [Supabase's resumable upload protocol](https://supabase.com/docs/guides/storage/uploads/resumable-uploads) with 6 MB chunks and automatic retries for interrupted requests. The application accepts files up to 250 MB; the Supabase project's global upload limit must also allow the file size (a bucket limit cannot override a lower project/plan limit). The existing `20260906000000_help_video.sql` migration creates the `preparedness-media` bucket, `site_media` record, and specialist-only write policies. Apply it with the other pending migrations if video publishing reports a missing table or bucket. The old published record remains in place until the replacement upload and database write succeed. Old files, or files uploaded successfully before a publication failure, remain in Storage for manual cleanup.
+Settings reuse the existing `site_media` Help slot and its administrator-only write policies. `file_path` now stores the external HTTPS URL; `mime_type` remains legacy metadata required by the existing schema and is not used for playback. No new migration or Storage upload is needed. Legacy Storage-path records fall back to the default Drive walkthrough. Previously uploaded files remain untouched in Storage.
 
 ## Content and privacy notes
 
