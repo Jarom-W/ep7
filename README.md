@@ -4,9 +4,9 @@ A full-stack emergency preparedness site for the Spanish Fork 7th Ward. The publ
 
 ## Architecture
 
-- React + TypeScript + Vite frontend (small static bundle, ideal for a Raspberry Pi 4B)
+- React + TypeScript + Vite frontend, built into a static bundle
 - Supabase Auth, Postgres, Storage, and Edge Functions
-- nginx container on the Pi, bound only to `127.0.0.1:8080`
+- nginx container on a Lenovo ThinkCentre M720q running Ubuntu Server 26.04.1 LTS (amd64), bound only to `127.0.0.1:8080`
 - Cloudflare Tunnel for public HTTPS; no router port-forward is required
 - Browser-local storage for guests, with optional private Supabase sync for signed-in families
 - A security-definer aggregate RPC for the public dashboard; it never returns individual family rows and suppresses preparedness measures until three families participate
@@ -56,43 +56,19 @@ Feedback is stored in Postgres for the admin inbox and emailed to `jaromwardwell
 
 Because confirmation-free email registration cannot prove that a visitor owns the address they enter, enable Supabase CAPTCHA protection before broad public promotion and do not use an email address as proof of ward membership. Directory visibility still depends on authenticated access and administrator-approved household records.
 
-## Raspberry Pi 4B deployment
+## Ubuntu Server deployment on the Lenovo M720q
 
-Install 64-bit Raspberry Pi OS Lite, Docker Engine, the Docker Compose plugin, and `cloudflared`. Clone the repo, create `.env` with the same two public Supabase values, then run:
+Follow the [Ubuntu Server setup guide](docs/ubuntu-server.md) for the complete fresh-server walkthrough: prepare Ubuntu 26.04.1 LTS and SSH, install Docker Engine and Compose, configure Supabase, verify the container, create a dashboard-managed Cloudflare Tunnel, and check recovery after reboot.
 
-```bash
-docker compose up -d --build
-curl http://127.0.0.1:8080
-```
+The guide starts a new tunnel for a domain already in Cloudflare; no configuration from the old host is needed. Only the frontend runs on the Lenovo. Keep the existing hosted Supabase project to preserve accounts, uploaded documents, and saved plans.
 
-The container is ARM64-compatible, limited to 128 MB RAM, restarts automatically, and exposes nginx only on the Pi loopback interface.
-
-Create a named Cloudflare Tunnel and route the chosen hostname to the container:
-
-```yaml
-# /etc/cloudflared/config.yml
-tunnel: YOUR_TUNNEL_ID
-credentials-file: /etc/cloudflared/YOUR_TUNNEL_ID.json
-ingress:
-  - hostname: preparedness.YOUR_DOMAIN
-    service: http://127.0.0.1:8080
-  - service: http_status:404
-```
-
-Then install and start the service:
-
-```bash
-sudo cloudflared service install
-sudo systemctl enable --now cloudflared
-```
-
-In Cloudflare, enable Always Use HTTPS, Bot Fight Mode, and a conservative rate-limit rule for the public site. Keep the Pi patched and do not expose ports 80, 443, 5432, or 22 through the router.
+Docker selects the native amd64 images automatically. The nginx container uses at most 128 MB RAM, rotates its logs, restarts automatically, and listens only on `127.0.0.1:8080`. Docker builds need additional memory beyond that runtime limit. Supabase values are embedded at build time, so changing `.env` requires a rebuild.
 
 ## Automatic deployment from main
 
-The Pi can poll GitHub five minutes after each completed check using the included systemd timer. It fetches `origin/main`, fast-forwards the checkout, builds while the existing container stays up, and replaces the `web` container only after the build succeeds. Docker must report the new container healthy before its commit is recorded as deployed. A failed startup restores the previous image/configuration; failed builds and startups are retried on the next poll, even if the checkout already has the new commit. A file lock prevents overlapping runs.
+The Ubuntu server can poll GitHub five minutes after each completed check using the included systemd timer. It fetches `origin/main`, fast-forwards the checkout, builds while the existing container stays up, and replaces the `web` container only after the build succeeds. Docker must report the new container healthy before its commit is recorded as deployed. A failed startup restores the previous image/configuration; failed builds and startups are retried on the next poll, even if the checkout already has the new commit. A file lock prevents overlapping runs.
 
-One-time setup **on the Pi**, after merging and pulling this change:
+One-time setup **on the Ubuntu server**, after merging and pulling this change:
 
 ```bash
 cd /absolute/path/to/ep7
@@ -115,9 +91,9 @@ systemctl --user list-timers ready-together-deploy.timer
 systemctl --user disable --now ready-together-deploy.timer
 ```
 
-The first poll occurs shortly after installation and on boot. Runs time out after 30 minutes. State, the last successful commit, and rollback configuration live in `~/.local/state/ready-together-deploy`; configuration lives in `~/.config/ready-together-deploy/environment`. An optional system-wide install is available by running the installer with `sudo`; it uses `/var/lib/ready-together-deploy` and `/etc/ready-together-deploy.conf`, and its management commands omit `--user`. Install only one timer for this checkout. Re-run the installer to apply future changes to the deployment scripts or timer. Build output and errors append to `deploy.log` in the state directory, so logs remain readable even when the system journal is unavailable. Disk cleanup is manual; the runner does not prune unrelated Docker images or volumes. If rollback fails, the log explicitly reports it; inspect Docker before retrying. Revert a bad release through a new commit on `main` instead of force-pushing or resetting the Pi checkout.
+The first poll occurs shortly after installation and on boot. Runs time out after 30 minutes. State, the last successful commit, and rollback configuration live in `~/.local/state/ready-together-deploy`; configuration lives in `~/.config/ready-together-deploy/environment`. An optional system-wide install is available by running the installer with `sudo`; it uses `/var/lib/ready-together-deploy` and `/etc/ready-together-deploy.conf`, and its management commands omit `--user`. Install only one timer for this checkout. Re-run the installer to apply future changes to the deployment scripts or timer. Build output and errors append to `deploy.log` in the state directory, so logs remain readable even when the system journal is unavailable. Disk cleanup is manual; the runner does not prune unrelated Docker images or volumes. If rollback fails, the log explicitly reports it; inspect Docker before retrying. Revert a bad release through a new commit on `main` instead of force-pushing or resetting the server checkout.
 
-The GitHub Checks workflow runs lint, build, browser regressions, radio tests, and deployment-runner tests. Protect `main` with the `verify` check if merges should require it. The Pi deploys merged commits directly, so merge only reviewed, passing changes. Supabase migrations and Edge Function deployments remain separate from this Docker timer: apply required migrations before merging a frontend that depends on them.
+The GitHub Checks workflow runs lint, build, browser regressions, radio tests, and deployment-runner tests. Protect `main` with the `verify` check if merges should require it. The server deploys merged commits directly, so merge only reviewed, passing changes. Supabase migrations and Edge Function deployments remain separate from this Docker timer: apply required migrations before merging a frontend that depends on them.
 
 ## Publishing the Help video
 
@@ -147,7 +123,7 @@ npm run test:deploy
 npx playwright install chromium
 npm run test:browser
 npm run build
-docker compose config
+docker compose --env-file .env.example config --quiet
 ```
 
 The production build goes to `dist/`. nginx is configured with SPA routing and immutable caching for hashed assets.
